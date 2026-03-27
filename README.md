@@ -50,13 +50,14 @@ Das Skript:
 
 ## Optional: Buy Me a Coffee
 
-- Ein optionaler Support-Button wird in der Topbar angezeigt, wenn eine URL gesetzt ist.
+- Ein optionaler Support-Button wird in der Topbar sowie im Startup-/First-Boot-Overlay (unten mittig) angezeigt, wenn eine URL gesetzt ist.
 - Dafür beim Start die Umgebungsvariable `BUY_ME_A_COFFEE_URL` (oder alternativ `SUPPORT_URL`) setzen.
+- Optional für GitHub-Profil/Repository: `.github/FUNDING.yml` enthält den Support-Link für die GitHub-Sponsor-Fläche.
 
 PowerShell (Windows):
 
 ```powershell
-$env:BUY_ME_A_COFFEE_URL="https://buymeacoffee.com/deinname"
+$env:BUY_ME_A_COFFEE_URL="https://buymeacoffee.com/Klaus09878"
 cd LiveMapApp
 npm start
 ```

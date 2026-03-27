@@ -59,6 +59,7 @@ class FrontendAppController {
 
     async bootstrap() {
         const startupExperience = beginStartupExperience();
+        await initSupportCta();
         
         try {
             updateStartupProgress({ statusText: 'Karte wird initialisiert...' });
@@ -69,7 +70,6 @@ class FrontendAppController {
             
             updateStartupProgress({ statusText: 'Navigation wird vorbereitet...' });
             initAppNavigation();
-            await initSupportCta();
             initModalAccessibility();
             initProfileSwitcher();
             
@@ -1152,12 +1152,15 @@ function normalizeSupportUrl(rawUrl) {
 }
 
 async function initSupportCta() {
-    const supportLink = document.getElementById('support-link');
-    if (!supportLink) {
-        return;
-    }
+    const supportLinks = [
+        document.getElementById('support-link'),
+        document.getElementById('startup-support-link-intro'),
+        document.getElementById('startup-support-link-loading')
+    ].filter(Boolean);
 
-    supportLink.classList.add('is-hidden');
+    if (!supportLinks.length) return;
+
+    supportLinks.forEach(link => link.classList.add('is-hidden'));
 
     try {
         const response = await fetch(PUBLIC_CONFIG_ENDPOINT, {
@@ -1174,8 +1177,10 @@ async function initSupportCta() {
             return;
         }
 
-        supportLink.href = supportUrl;
-        supportLink.classList.remove('is-hidden');
+        supportLinks.forEach(link => {
+            link.href = supportUrl;
+            link.classList.remove('is-hidden');
+        });
     } catch (error) {
         console.warn('Support-CTA konnte nicht geladen werden.', error);
     }

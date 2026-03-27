@@ -3802,12 +3802,45 @@ header h1 {
 
 .startup-card {
     width: min(620px, 100%);
+    position: relative;
     display: none;
     background: rgba(15, 23, 42, 0.86);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
     padding: clamp(20px, 4vw, 34px) clamp(18px, 4vw, 32px);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.startup-support-link {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 3450;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-main);
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+}
+
+.startup-support-link:hover {
+    background: var(--active-theme-color);
+    border-color: var(--active-theme-color);
+    color: #fff;
+    transform: translateX(-50%) translateY(-1px);
+}
+
+.startup-support-link.is-hidden {
+    display: none;
 }
 
 .startup-overlay.is-loading .startup-card--loading {
