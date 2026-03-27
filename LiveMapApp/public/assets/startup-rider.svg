@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" fill="none">
+  <defs>
+    <linearGradient id="bikePaint" x1="16" y1="14" x2="106" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="0.55" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="jersey" x1="44" y1="20" x2="78" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#cbd5e1"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="24" cy="52" r="15" stroke="rgba(248,250,252,0.7)" stroke-width="4"/>
+  <circle cx="96" cy="52" r="15" stroke="rgba(248,250,252,0.7)" stroke-width="4"/>
+
+  <path d="M24 52 L43 34 L64 52 L96 52" stroke="url(#bikePaint)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43 34 L74 30 L64 52" stroke="url(#bikePaint)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M72 30 L86 28" stroke="url(#bikePaint)" stroke-width="3.8" stroke-linecap="round"/>
+
+  <circle cx="61" cy="18" r="6" fill="#f8fafc"/>
+  <path d="M56 24 L72 30 L64 41 L50 34" fill="url(#jersey)"/>
+  <path d="M50 34 L43 48" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M66 40 L76 51" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>
+</svg>
