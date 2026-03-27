@@ -4,8 +4,14 @@ Lokale Web-App zur Verwaltung und Analyse von Touren/Trainingsdaten (GPX/FIT/Hea
 
 ## Empfohlene GitHub-About-Daten
 
-- Description: Lokales GPX Diary mit Kartenansicht, Analysen, Statistiken und Health-Import.
+- Description (Standard): Interaktives GPX/FIT-Trainingstagebuch mit Live-Karte, Aktivitätsanalyse und persönlichen Leistungsstatistiken.
 - Topics: gpx, fit, gps-tracking, leaflet, training, sports-analytics, dashboard, nodejs, express, health-data
+
+## Komoot GPX-Download
+
+- Für den Download von GPX-Dateien direkt aus Komoot wird aktuell ein externes Skript benötigt: https://github.com/timschneeb/KomootGPX
+- Dieses Projekt verarbeitet und analysiert die exportierten Dateien lokal.
+- Eine direkte Komoot-Integration kann später ergänzt werden (z. B. als separater Import-Service/CLI-Worker).
 
 ## Projektstruktur
 
