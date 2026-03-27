@@ -1,0 +1,4 @@
+* text=auto
+
+# Keep Windows launcher scripts in CRLF
+*.bat text eol=crlf

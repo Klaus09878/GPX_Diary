@@ -1,0 +1,50 @@
+name: Bug Report
+description: Fehler melden
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke fürs Melden eines Fehlers.
+  - type: input
+    id: os
+    attributes:
+      label: Betriebssystem
+      placeholder: z. B. Windows 11
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node-Version
+      placeholder: z. B. v20.11.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Schritte zur Reproduktion
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      render: shell

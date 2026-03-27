@@ -1,0 +1,35 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+
+# Logs / temp
+*.log
+*.tmp
+*.temp
+
+# Node
+LiveMapApp/node_modules/
+LiveMapApp/npm-debug.log*
+LiveMapApp/yarn-debug.log*
+LiveMapApp/yarn-error.log*
+LiveMapApp/pnpm-debug.log*
+
+# Runtime bundles / portable node
+LiveMapApp/runtime/
+
+# Local app data (privacy + generated state)
+LiveMapApp/data/**
+!LiveMapApp/data/.gitkeep
+
+# Database / caches
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+
+# Optional env files
+LiveMapApp/.env
+LiveMapApp/.env.*

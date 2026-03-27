@@ -1,0 +1,28 @@
+name: Feature Request
+description: Verbesserungsidee vorschlagen
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+      placeholder: Beschreibe den aktuellen Schmerzpunkt.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Lösungsvorschlag
+      placeholder: Beschreibe die gewünschte Funktion.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen
+      placeholder: Welche Alternativen wurden betrachtet?
+  - type: textarea
+    id: context
+    attributes:
+      label: Zusätzlicher Kontext
