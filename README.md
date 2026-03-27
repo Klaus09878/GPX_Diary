@@ -2,6 +2,11 @@
 
 Lokale Web-App zur Verwaltung und Analyse von Touren/Trainingsdaten (GPX/FIT/Health CSV) mit Kartenansicht, Statistiken und Import-Funktionen.
 
+## Empfohlene GitHub-About-Daten
+
+- Description: Lokales GPX Diary mit Kartenansicht, Analysen, Statistiken und Health-Import.
+- Topics: gpx, fit, gps-tracking, leaflet, training, sports-analytics, dashboard, nodejs, express, health-data
+
 ## Projektstruktur
 
 - `start_app.bat` – Windows-Komfortstart (öffnet Browser + startet Server)

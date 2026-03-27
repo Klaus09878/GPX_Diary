@@ -8,7 +8,16 @@
     "start": "node server.js",
     "verify:migration": "node scripts/migrationSmokeGate.js"
   },
-  "keywords": [],
+  "keywords": [
+    "gpx",
+    "fit",
+    "training",
+    "gps",
+    "leaflet",
+    "dashboard",
+    "statistics",
+    "health"
+  ],
   "author": "",
   "license": "GPL-3.0-only",
   "dependencies": {
