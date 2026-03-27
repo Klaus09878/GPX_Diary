@@ -4,6 +4,7 @@ class AppConfig {
     constructor({ rootDir, port } = {}) {
         this.rootDir = rootDir || process.cwd();
         this.port = Number.parseInt(port, 10) || 3000;
+        this.supportUrl = this.normalizePublicHttpUrl(process.env.BUY_ME_A_COFFEE_URL || process.env.SUPPORT_URL || '');
         this.profiles = ['motorrad', 'rennrad', 'laufen', 'spazieren'];
         this.allowedUploadExtensions = new Set(['.gpx', '.fit', '.fir']);
         this.maxUploadFiles = 30;
@@ -20,6 +21,28 @@ class AppConfig {
         this.apiTrackReadRateMaxRequests = 2400;
         this.apiWriteRateWindowMs = 60 * 1000;
         this.apiWriteRateMaxRequests = 180;
+    }
+
+    normalizePublicHttpUrl(rawValue) {
+        if (typeof rawValue !== 'string') {
+            return '';
+        }
+
+        const trimmed = rawValue.trim();
+        if (!trimmed) {
+            return '';
+        }
+
+        try {
+            const parsed = new URL(trimmed);
+            if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+                return '';
+            }
+
+            return parsed.toString();
+        } catch (error) {
+            return '';
+        }
     }
 
     get publicDir() {

@@ -1,6 +1,7 @@
 // app.js — GPX Map Diary Frontend (100% Functional & Production Ready)
 
 const API_BASE = '/api';
+const PUBLIC_CONFIG_ENDPOINT = `${API_BASE}/public-config`;
 
 class PersistedUiStateStore {
     constructor(storageKey) {
@@ -68,6 +69,7 @@ class FrontendAppController {
             
             updateStartupProgress({ statusText: 'Navigation wird vorbereitet...' });
             initAppNavigation();
+            await initSupportCta();
             initModalAccessibility();
             initProfileSwitcher();
             
@@ -1125,6 +1127,58 @@ function setActiveView(nextView, { skipPersist = false } = {}) {
 
 function initAppNavigation() {
     return appNavigationBridgeService.initAppNavigation();
+}
+
+function normalizeSupportUrl(rawUrl) {
+    if (typeof rawUrl !== 'string') {
+        return '';
+    }
+
+    const trimmed = rawUrl.trim();
+    if (!trimmed) {
+        return '';
+    }
+
+    try {
+        const parsed = new URL(trimmed, window.location.origin);
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+            return '';
+        }
+
+        return parsed.toString();
+    } catch (error) {
+        return '';
+    }
+}
+
+async function initSupportCta() {
+    const supportLink = document.getElementById('support-link');
+    if (!supportLink) {
+        return;
+    }
+
+    supportLink.classList.add('is-hidden');
+
+    try {
+        const response = await fetch(PUBLIC_CONFIG_ENDPOINT, {
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        const supportUrl = normalizeSupportUrl(payload && payload.supportUrl);
+        if (!supportUrl) {
+            return;
+        }
+
+        supportLink.href = supportUrl;
+        supportLink.classList.remove('is-hidden');
+    } catch (error) {
+        console.warn('Support-CTA konnte nicht geladen werden.', error);
+    }
 }
 
 function openModalWithA11y(modal, { returnFocusEl = null, initialFocusSelector = '.close-btn' } = {}) {

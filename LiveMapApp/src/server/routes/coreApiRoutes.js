@@ -1,11 +1,18 @@
 function createCoreApiRoutes({
     profiles,
+    supportUrl,
     weatherHistoryService,
     WeatherHistoryServiceError
 }) {
     function registerRoutes(app) {
         app.get('/api/profiles', (req, res) => {
             return res.json(profiles);
+        });
+
+        app.get('/api/public-config', (req, res) => {
+            return res.json({
+                supportUrl: typeof supportUrl === 'string' ? supportUrl : ''
+            });
         });
 
         app.get('/api/weather/history', async (req, res) => {

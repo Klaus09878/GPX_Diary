@@ -48,6 +48,19 @@ Das Skript:
 - installiert bei Bedarf `node_modules`
 - öffnet den Browser auf `http://localhost:3000`
 
+## Optional: Buy Me a Coffee
+
+- Ein optionaler Support-Button wird in der Topbar angezeigt, wenn eine URL gesetzt ist.
+- Dafür beim Start die Umgebungsvariable `BUY_ME_A_COFFEE_URL` (oder alternativ `SUPPORT_URL`) setzen.
+
+PowerShell (Windows):
+
+```powershell
+$env:BUY_ME_A_COFFEE_URL="https://buymeacoffee.com/deinname"
+cd LiveMapApp
+npm start
+```
+
 ## Daten & Datenschutz
 
 - Persönliche Daten werden **nicht** versioniert.

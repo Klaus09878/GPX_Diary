@@ -233,6 +233,7 @@ function createAppContext({ rootDir, port }) {
 
     const coreApiRoutes = createCoreApiRoutes({
         profiles: PROFILES,
+        supportUrl: appConfig.supportUrl,
         weatherHistoryService,
         WeatherHistoryServiceError
     });
