@@ -7,7 +7,6 @@ class AppConfig {
         this.supportUrl = this.normalizePublicHttpUrl(process.env.BUY_ME_A_COFFEE_URL || process.env.SUPPORT_URL || '');
         this.profiles = ['motorrad', 'rennrad', 'laufen', 'spazieren'];
         this.allowedUploadExtensions = new Set(['.gpx', '.fit', '.fir']);
-        this.maxUploadFiles = 30;
         this.maxUploadFileSize = 25 * 1024 * 1024;
         this.duplicatePendingTtlMs = 15 * 60 * 1000;
         this.duplicateCleanupIntervalMs = 5 * 60 * 1000;

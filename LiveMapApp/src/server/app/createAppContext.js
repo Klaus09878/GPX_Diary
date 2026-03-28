@@ -30,7 +30,6 @@ function createAppContext({ rootDir, port }) {
     const PORT = appConfig.port;
 
     const ALLOWED_UPLOAD_EXTENSIONS = appConfig.allowedUploadExtensions;
-    const MAX_UPLOAD_FILES = appConfig.maxUploadFiles;
     const MAX_UPLOAD_FILE_SIZE = appConfig.maxUploadFileSize;
     const DUPLICATE_PENDING_TTL_MS = appConfig.duplicatePendingTtlMs;
     const DUPLICATE_CLEANUP_INTERVAL_MS = appConfig.duplicateCleanupIntervalMs;
@@ -166,7 +165,6 @@ function createAppContext({ rootDir, port }) {
     const upload = multer({
         storage,
         limits: {
-            files: MAX_UPLOAD_FILES,
             fileSize: MAX_UPLOAD_FILE_SIZE
         },
         fileFilter: (req, file, cb) => {

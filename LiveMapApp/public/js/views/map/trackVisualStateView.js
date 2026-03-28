@@ -19,16 +19,16 @@
             const canRenderAnalysis = isAnalysisModeEnabled() && isAnalysisAvailable();
 
             Object.values(getTrackLayers()).forEach(layer => {
-                layer.setStyle({ color: profileColor, weight: 4, opacity: 0.1 });
+                layer.setStyle({ color: profileColor, weight: 5, opacity: 0.3 });
             });
 
             const analysisMode = getAnalysisMode();
             if (canRenderAnalysis && analysisMode === analysisModeElevation) {
-                gpxLayer.setStyle({ color: '#f8fafc', weight: 3, opacity: 0.14 });
+                gpxLayer.setStyle({ color: '#f8fafc', weight: 4, opacity: 0.28 });
                 gpxLayer.bringToBack();
                 drawElevationAnalysis(getPlaybackPoints());
             } else if (canRenderAnalysis && analysisMode === analysisModeSpeed) {
-                gpxLayer.setStyle({ color: '#f8fafc', weight: 3, opacity: 0.14 });
+                gpxLayer.setStyle({ color: '#f8fafc', weight: 4, opacity: 0.28 });
                 gpxLayer.bringToBack();
                 drawSpeedAnalysis(getPlaybackPoints());
             } else {
@@ -45,12 +45,12 @@
             const profileColor = getComputedStyle(document.documentElement).getPropertyValue(`--${currentProfile}-color`).trim();
 
             Object.values(getTrackLayers()).forEach(layer => {
-                layer.setStyle({ color: profileColor, weight: 4, opacity: 0.08 });
+                layer.setStyle({ color: profileColor, weight: 5, opacity: 0.24 });
             });
 
             clearAnalysisOverlayLayers();
 
-            gpxLayer.setStyle({ color: '#94a3b8', weight: 4, opacity: 0.2 });
+            gpxLayer.setStyle({ color: '#94a3b8', weight: 5, opacity: 0.32 });
             gpxLayer.bringToBack();
         }
 
