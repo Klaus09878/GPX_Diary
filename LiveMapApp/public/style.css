@@ -3088,72 +3088,17 @@ header h1 {
     color: #f87171;
 }
 
-/* Loading Overlay */
+/* ========================================
+   OVERLAY STYLES - Startup & Loading UI
+   ======================================== */
+
+/* Loading Overlay  - DEPRECATED: Use .startup-overlay instead */
 #app-loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(10, 10, 10, 0.85);
-    backdrop-filter: blur(20px);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: none !important;
 }
 
-.loading-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 40px;
-    border-radius: var(--radius-lg);
-    text-align: center;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    max-width: 400px;
-    width: 90%;
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top-color: var(--active-theme-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 24px;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.loading-box h3 {
-    margin-bottom: 8px;
-    font-size: 20px;
-}
-
-.loading-box p {
-    color: var(--text-muted);
-    font-size: 14px;
-    margin-bottom: 24px;
-}
-
-.loading-bar {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-#loading-bar-fill {
-    height: 100%;
-    width: 0%;
-    background: var(--active-theme-color);
-    box-shadow: 0 0 10px var(--active-theme-color);
-    transition: width 0.3s ease-out;
+.app-loading-overlay {
+    display: none !important;
 }
 
 /* Explicit style for the Ausblenden button to ensure modern look */
@@ -3480,32 +3425,15 @@ header h1 {
 }
 
 .app-loading-overlay {
-    position: fixed;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 14px;
-    background: rgba(10, 10, 12, 0.62);
-    backdrop-filter: blur(4px);
-    z-index: 3000;
+    display: none !important;
 }
 
 .app-loading-overlay__spinner {
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: var(--active-theme-color);
-    animation: spin 1s linear infinite;
+    display: none !important;
 }
 
 .app-loading-overlay__label {
-    color: var(--text-main);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    display: none !important;
 }
 
 .trim-editor-card {
@@ -3775,7 +3703,17 @@ header h1 {
     color: var(--text-main);
 }
 
-/* ---- Startup Welcome / Loading Overlay ---- */
+/* ========================================
+   STARTUP OVERLAY & MODALS
+   Unified overlay system for app initialization
+   ======================================== */
+
+/**
+ * Primary startup overlay container
+ * Shows during app initialization with loading or intro screens
+ * Uses glass-morphism design with backdrop blur
+ * States: is-hidden (hidden), is-loading (loading screen), is-intro (intro screen)
+ */
 .startup-overlay {
     position: fixed;
     inset: 0;
@@ -3800,6 +3738,11 @@ header h1 {
     pointer-events: none;
 }
 
+/**
+ * Card container inside startup overlay
+ * Individual cards for loading/intro states with smooth animations
+ * Display is controlled by .is-loading / .is-intro state classes
+ */
 .startup-card {
     width: min(620px, 100%);
     position: relative;
@@ -3811,6 +3754,11 @@ header h1 {
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
 }
 
+/**
+ * Support/sponsorship link in fixed bottom position
+ * Appears on all startup cards (intro, loading)
+ * Includes "Buy me a coffee" sponsorship link
+ */
 .startup-support-link {
     position: fixed;
     left: 50%;
@@ -3843,6 +3791,10 @@ header h1 {
     display: none;
 }
 
+/**
+ * Startup card state styles
+ * Show/hide cards based on overlay state with animation
+ */
 .startup-overlay.is-loading .startup-card--loading {
     display: block;
     animation: startupCardIn 0.45s cubic-bezier(0.4, 0, 0.2, 1);

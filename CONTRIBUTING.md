@@ -11,6 +11,8 @@ Vielen Dank für Beiträge zu diesem Projekt.
    - `npm install`
 4. App starten:
    - `npm start`
+5. Tests ausführen (optional):
+   - `npm test` — führt Basis-Tests aus; neue Tests gehören in `tests/`
 
 ## Wichtige Regeln
 
@@ -19,10 +21,17 @@ Vielen Dank für Beiträge zu diesem Projekt.
 - Kein `node_modules` committen.
 - Änderungen bitte fokussiert und klein halten.
 
+## Testing
+
+- Unit-Tests gehören in `tests/` mit Naming-Convention `*.test.js`
+- Vor PR-Submit immer `npm test` ausführen (sollte fehlschlagfrei sein)
+- `npm run verify:migration` prüft ESM-Migration und Smoke-Gate
+
 ## Pull Requests
 
 - Beschreibe klar: Problem, Lösung, Testschritte.
 - Falls UI geändert wurde: Screenshot oder kurze Beschreibung hinzufügen.
+- Alle Tests müssen lokal mit `npm test` && `npm run verify:migration` erfolgreich sein
 - Prüfe vor dem PR:
   - `git status`
   - `git add -n .`

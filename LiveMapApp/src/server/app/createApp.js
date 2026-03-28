@@ -18,9 +18,11 @@ function createApp({ rootDir, port }) {
             await context.metadataStore.initialize();
             await context.syncMetadataForAllProfiles();
 
-            context.app.listen(context.port, () => {
+            const server = context.app.listen(context.port, () => {
                 console.log(`Server running on http://localhost:${context.port}`);
             });
+
+            return server;
         } catch (err) {
             console.error('Server startup failed:', err);
             process.exit(1);
@@ -30,6 +32,7 @@ function createApp({ rootDir, port }) {
     return {
         app: context.app,
         startServer,
+        metadataStore: context.metadataStore,
         config: {
             port: context.port
         }

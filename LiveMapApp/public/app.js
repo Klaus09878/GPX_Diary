@@ -1151,6 +1151,8 @@ function normalizeSupportUrl(rawUrl) {
     }
 }
 
+const DEFAULT_SUPPORT_URL = 'https://buymeacoffee.com/Klaus09878';
+
 async function initSupportCta() {
     const supportLinks = [
         document.getElementById('support-link'),
@@ -1162,27 +1164,41 @@ async function initSupportCta() {
 
     supportLinks.forEach(link => link.classList.add('is-hidden'));
 
-    try {
-        const response = await fetch(PUBLIC_CONFIG_ENDPOINT, {
-            cache: 'no-store'
-        });
-
-        if (!response.ok) {
-            return;
-        }
-
-        const payload = await response.json().catch(() => ({}));
-        const supportUrl = normalizeSupportUrl(payload && payload.supportUrl);
+    function applySupportUrl(rawUrl) {
+        const supportUrl = normalizeSupportUrl(rawUrl);
         if (!supportUrl) {
-            return;
+            return false;
         }
 
         supportLinks.forEach(link => {
             link.href = supportUrl;
             link.classList.remove('is-hidden');
         });
+
+        return true;
+    }
+
+    try {
+        const response = await fetch(PUBLIC_CONFIG_ENDPOINT, {
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            applySupportUrl(DEFAULT_SUPPORT_URL);
+            return;
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        if (applySupportUrl(payload && payload.supportUrl)) {
+            return;
+        }
+
+        if (!applySupportUrl(DEFAULT_SUPPORT_URL)) {
+            return;
+        }
     } catch (error) {
         console.warn('Support-CTA konnte nicht geladen werden.', error);
+        applySupportUrl(DEFAULT_SUPPORT_URL);
     }
 }
 

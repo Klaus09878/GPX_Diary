@@ -1,4 +1,5 @@
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 
 function createTrackRoutes({
@@ -100,10 +101,12 @@ function createTrackRoutes({
             const tempPath = path.join(path.dirname(filePath), `.trim_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.gpx`);
 
             try {
-                const originalXml = fs.readFileSync(filePath, 'utf-8');
+                // Use async file read
+                const originalXml = await fsp.readFile(filePath, 'utf-8');
                 const trimmedXml = await trimGpxXml(originalXml, startIndex, endIndex);
 
-                fs.writeFileSync(tempPath, trimmedXml, 'utf-8');
+                // Use async file write
+                await fsp.writeFile(tempPath, trimmedXml, 'utf-8');
 
                 const meta = await getGpxMetaCached(tempPath);
                 if (!meta || meta.pointCount < 2) {
@@ -124,9 +127,8 @@ function createTrackRoutes({
                 console.error('Error trimming track:', err);
 
                 try {
-                    if (fs.existsSync(tempPath)) {
-                        fs.unlinkSync(tempPath);
-                    }
+                    // Use async unlink
+                    await fsp.unlink(tempPath);
                 } catch (_) {}
 
                 invalidateGpxMetaCache(tempPath);
@@ -149,10 +151,12 @@ function createTrackRoutes({
             const tempPath = path.join(path.dirname(filePath), `.outlier_clean_${Date.now()}_${Math.random().toString(36).slice(2, 10)}.gpx`);
 
             try {
-                const originalXml = fs.readFileSync(filePath, 'utf-8');
+                // Use async file read
+                const originalXml = await fsp.readFile(filePath, 'utf-8');
                 const cleaned = await removeGpxPointRanges(originalXml, req.body?.ranges);
 
-                fs.writeFileSync(tempPath, cleaned.xml, 'utf-8');
+                // Use async file write
+                await fsp.writeFile(tempPath, cleaned.xml, 'utf-8');
 
                 const meta = await getGpxMetaCached(tempPath);
                 if (!meta || meta.pointCount < 2) {
@@ -175,9 +179,8 @@ function createTrackRoutes({
                 console.error('Error cleaning outliers:', err);
 
                 try {
-                    if (fs.existsSync(tempPath)) {
-                        fs.unlinkSync(tempPath);
-                    }
+                    // Use async unlink
+                    await fsp.unlink(tempPath);
                 } catch (_) {}
 
                 invalidateGpxMetaCache(tempPath);
@@ -198,7 +201,8 @@ function createTrackRoutes({
             }
 
             try {
-                fs.unlinkSync(filePath);
+                // Use async unlink
+                await fsp.unlink(filePath);
                 invalidateGpxMetaCache(filePath);
                 await metadataStore.removeActivity(profile, filename);
                 return res.json({ message: 'File deleted successfully' });
@@ -226,18 +230,22 @@ function createTrackRoutes({
                     return res.json({ message: 'No files to delete', count: 0 });
                 }
 
-                gpxFiles.forEach(file => {
+                // Use Promise.all to delete files concurrently (with error handling)
+                const deletePromises = gpxFiles.map(async file => {
                     const filePath = path.join(profilePath, file);
-
                     try {
-                        fs.unlinkSync(filePath);
+                        await fsp.unlink(filePath);
                         invalidateGpxMetaCache(filePath);
-                        deletedCount += 1;
+                        return true;
                     } catch (unlinkErr) {
                         console.error(`Error deleting ${file}:`, unlinkErr);
-                        errorOccurred = true;
+                        return false;
                     }
                 });
+
+                const results = await Promise.all(deletePromises);
+                deletedCount = results.filter(r => r).length;
+                errorOccurred = results.some(r => !r);
 
                 const clearedPendingCount = clearProfilePending(profile);
                 await metadataStore.removeActivitiesForProfile(profile);

@@ -1,7 +1,24 @@
 const fs = require('fs');
+const fsp = require('fs').promises;
 const csv = require('csv-parser');
 
 function createHealthRoutes({ upload, metadataStore }) {
+    /**
+     * Detect CSV separator asynchronously by reading first 4 bytes
+     */
+    async function detectCsvSeparator(filePath) {
+        try {
+            const buffer = Buffer.alloc(4);
+            const fd = await fsp.open(filePath, 'r');
+            await fd.read(buffer, 0, 4, 0);
+            await fd.close();
+            return buffer.toString().startsWith('sep=') ? 1 : 0;
+        } catch (error) {
+            console.error('Error detecting CSV separator:', error);
+            return 0;
+        }
+    }
+
     async function handleUploadHealth(req, res) {
         if (!req.file) {
             return res.status(400).json({ error: 'Keine Datei hochgeladen' });
@@ -11,14 +28,9 @@ function createHealthRoutes({ upload, metadataStore }) {
 
         try {
             const results = [];
-
-            const buffer = Buffer.alloc(4);
-            const fd = fs.openSync(filePath, 'r');
-            fs.readSync(fd, buffer, 0, 4, 0);
-            fs.closeSync(fd);
-
-            const firstChars = buffer.toString();
-            const skipLines = firstChars.startsWith('sep=') ? 1 : 0;
+            
+            // Use async separator detection
+            const skipLines = await detectCsvSeparator(filePath);
 
             fs.createReadStream(filePath)
                 .pipe(csv({
@@ -69,22 +81,36 @@ function createHealthRoutes({ upload, metadataStore }) {
                             await metadataStore.upsertHealthSteps(dateKey, steps);
                         }
 
-                        fs.unlinkSync(filePath);
+                        // Use async unlink
+                        try {
+                            await fsp.unlink(filePath);
+                        } catch (e) {
+                            console.warn('Could not unlink health file:', e.message);
+                        }
                         return res.json({ success: true, count: stepsByDate.size });
                     } catch (error) {
                         console.error('Health upload inner error:', error);
-                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                        try {
+                            await fsp.unlink(filePath);
+                        } catch (e) {
+                            // Ignore cleanup errors
+                        }
                         return res.status(500).json({ error: 'Fehler beim Verarbeiten der Gesundheitsdaten' });
                     }
                 })
                 .on('error', (error) => {
                     console.error('CSV parse error:', error);
-                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    // Use async unlink in error handler too
+                    fsp.unlink(filePath).catch(() => {
+                        // Best effort cleanup
+                    });
                     return res.status(500).json({ error: 'Fehler beim Lesen der CSV-Datei' });
                 });
         } catch (error) {
             console.error('Health upload outer error:', error);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            fsp.unlink(filePath).catch(() => {
+                // Best effort cleanup
+            });
             return res.status(500).json({ error: 'Fehler beim Vorbereiten des Imports' });
         }
     }

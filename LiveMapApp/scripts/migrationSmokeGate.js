@@ -3,12 +3,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const { spawn, spawnSync } = require('node:child_process');
+const net = require('node:net');
+const { spawn, spawnSync, execSync } = require('node:child_process');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVICES_DIR = path.join(PROJECT_ROOT, 'public', 'js', 'app', 'services');
 const INDEX_HTML = path.join(PROJECT_ROOT, 'public', 'index.html');
 const APP_JS = path.join(PROJECT_ROOT, 'public', 'app.js');
+const TEST_PORT = 3000;
 
 function logStep(message) {
     process.stdout.write(`\n[gate] ${message}\n`);
@@ -17,6 +19,67 @@ function logStep(message) {
 function fail(message) {
     process.stderr.write(`\n[gate] FAIL: ${message}\n`);
     process.exit(1);
+}
+
+function isPortInUse(port) {
+    return new Promise((resolve) => {
+        const server = net.createServer();
+        server.once('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                resolve(true);
+            } else {
+                resolve(false);
+            }
+        });
+        server.once('listening', () => {
+            server.close();
+            resolve(false);
+        });
+        server.listen(port);
+    });
+}
+
+function cleanupPort(port) {
+    logStep(`Checking if port ${port} is in use...`);
+    try {
+        // Windows: netstat and taskkill
+        if (process.platform === 'win32') {
+            try {
+                const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
+                const lines = result.trim().split('\n');
+                for (const line of lines) {
+                    const match = line.trim().split(/\s+/);
+                    if (match.length > 0) {
+                        const pid = match[match.length - 1];
+                        if (pid && pid !== 'PID' && /^\d+$/.test(pid)) {
+                            logStep(`Killing existing process on port ${port} (PID: ${pid})`);
+                            execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
+                        }
+                    }
+                }
+            } catch (e) {
+                // netstat might fail, that's ok
+            }
+        } else {
+            // Unix: lsof and kill
+            try {
+                const result = execSync(`lsof -i :${port}`, { encoding: 'utf8' });
+                const lines = result.split('\n');
+                for (let i = 1; i < lines.length; i++) {
+                    const tokens = lines[i].split(/\s+/);
+                    if (tokens.length > 1) {
+                        const pid = tokens[1];
+                        logStep(`Killing existing process on port ${port} (PID: ${pid})`);
+                        execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+                    }
+                }
+            } catch (e) {
+                // lsof might fail, that's ok
+            }
+        }
+    } catch (error) {
+        // Non-fatal: port cleanup is best-effort
+    }
 }
 
 function runNodeSyntaxCheck(filePath) {
@@ -135,6 +198,10 @@ async function waitForServer(maxAttempts = 30) {
 
 async function runEndpointSmoke() {
     logStep('Running endpoint smoke test on / and /api/tracks/rennrad');
+    
+    // Pre-flight: clean up port if needed
+    cleanupPort(TEST_PORT);
+    await new Promise(r => setTimeout(r, 250)); // Give port time to release
 
     const server = spawn(process.execPath, ['server.js'], {
         cwd: PROJECT_ROOT,
@@ -142,8 +209,12 @@ async function runEndpointSmoke() {
     });
 
     let stderr = '';
+    let stdout = '';
     server.stderr.on('data', (chunk) => {
         stderr += chunk.toString();
+    });
+    server.stdout.on('data', (chunk) => {
+        stdout += chunk.toString();
     });
 
     try {
@@ -157,11 +228,13 @@ async function runEndpointSmoke() {
         }
 
         process.stdout.write(`[gate] Smoke OK (HOME=${homeStatus}, TRACKS=${tracksStatus})\n`);
+    } catch (error) {
+        fail(`Endpoint smoke error: ${error?.message || String(error)}\n${stderr || stdout || ''}`);
     } finally {
         if (!server.killed) {
             server.kill();
         }
-        await wait(300);
+        await new Promise(r => setTimeout(r, 300));
         if (!server.killed && !server.exitCode) {
             server.kill('SIGKILL');
         }
@@ -174,9 +247,24 @@ async function runEndpointSmoke() {
 
 async function main() {
     logStep('Starting migration smoke gate');
-    runSyntaxChecks();
-    runBridgeParityCheck();
-    await runEndpointSmoke();
+    try {
+        runSyntaxChecks();
+    } catch (error) {
+        fail(`Syntax check failed: ${error?.message || String(error)}`);
+    }
+    
+    try {
+        runBridgeParityCheck();
+    } catch (error) {
+        fail(`Bridge parity check failed: ${error?.message || String(error)}`);
+    }
+    
+    try {
+        await runEndpointSmoke();
+    } catch (error) {
+        fail(`Endpoint smoke test failed: ${error?.message || String(error)}`);
+    }
+    
     logStep('PASS: migration smoke gate complete');
 }
 
