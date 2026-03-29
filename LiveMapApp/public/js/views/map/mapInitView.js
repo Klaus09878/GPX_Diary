@@ -1,11 +1,11 @@
 (function attachMapInitViewFactory(globalScope) {
-    function createMapInitView({ setMap }) {
+    function createMapInitView({ setMap, onMapZoomChanged }) {
         function initMap() {
             const map = L.map('map', { zoomControl: false }).setView([51.1657, 10.4515], 6);
             setMap(map);
 
             const baseLayers = {
-                "dark": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO' }),
+                "CartoDB.DarkMatter": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO' }),
                 "standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
                 "standard-dim": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }),
                 "voyager": L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO, OpenStreetMap' }),
@@ -13,8 +13,8 @@
                 "outdoor": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenTopoMap' })
             };
 
-            baseLayers["dark"].addTo(map);
-            let activeBaseLayer = "dark";
+            baseLayers["CartoDB.DarkMatter"].addTo(map);
+            let activeBaseLayer = "CartoDB.DarkMatter";
             const mapElement = map.getContainer();
 
             const updateBaseLayerMood = (layerKey) => {
@@ -29,7 +29,7 @@
 
             document.querySelectorAll('.layer-btn').forEach(btn => {
                 const layerKey = btn.getAttribute('data-layer');
-                if (layerKey === 'dark') btn.classList.add('active');
+                if (layerKey === 'CartoDB.DarkMatter') btn.classList.add('active');
 
                 btn.addEventListener('click', () => {
                     if (!layerKey || !baseLayers[layerKey]) return;
@@ -44,6 +44,12 @@
             });
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            map.on('zoomend', () => {
+                if (typeof onMapZoomChanged === 'function') {
+                    onMapZoomChanged(map.getZoom());
+                }
+            });
         }
 
         return {

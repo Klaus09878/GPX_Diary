@@ -379,7 +379,9 @@ const overlayHeatmapToggleService = window.createOverlayHeatmapToggleService({
     updateHeatmap,
     getTrackLayers: () => trackLayers,
     getActiveTrackName: () => activeTrackName,
-    getMap: () => map
+    getMap: () => map,
+    getAllLineLayers: collectAllNonHeatmapLineLayers,
+    getHeatmapLayers: () => heatmapLayers
 });
 const playbackControlService = window.createPlaybackControlService({
     getPlaybackKeybindingsInitialized: () => playbackKeybindingsInitialized,
@@ -2742,6 +2744,26 @@ async function runWithConcurrency(taskFactories, concurrencyLimit = 4) {
     await Promise.all(workers);
 }
 
+function collectAllNonHeatmapLineLayers() {
+    const trackRouteLayers = Object.values(trackLayers || {});
+    const analysisRouteLayers = Array.isArray(analysisLayers) ? analysisLayers : [];
+    const compareRouteLayers = Array.isArray(compareOverlayLayers) ? compareOverlayLayers : [];
+    const prRouteLayer = prHighlightLayer ? [prHighlightLayer] : [];
+    const trimPreviewLayer = trimSelection?.previewLayer ? [trimSelection.previewLayer] : [];
+    const outlierCandidateLayers = (outlierSelection?.candidates || [])
+        .map(candidate => candidate?.layer)
+        .filter(Boolean);
+
+    return [
+        ...trackRouteLayers,
+        ...analysisRouteLayers,
+        ...compareRouteLayers,
+        ...prRouteLayer,
+        ...trimPreviewLayer,
+        ...outlierCandidateLayers
+    ].filter(Boolean);
+}
+
 function showProfileTracks(profile) {
     if (trimSelection && trimSelection.profile !== profile) {
         endTrimMode({ refreshPanel: false });
@@ -2773,11 +2795,18 @@ function showProfileTracks(profile) {
         const c = getCachedTrack(profile, f);
         if (c) {
             trackLayers[f] = c.layer;
-            c.layer.addTo(map);
+            if (!isHeatmapActive) {
+                c.layer.addTo(map);
+            }
             trackDataCache.push(c.stats);
         }
     });
     applyFiltersAndSort();
+
+    if (isHeatmapActive) {
+        updateHeatmap();
+    }
+
     toggleDeleteAllButton(trackDataCache.length > 0);
 
     if (isDashboardOpen()) {
@@ -4815,6 +4844,11 @@ function getMapInitViewApi() {
     return resolveViewApi('__mapInitViewApi', 'createMapInitView', () => ({
             setMap: (nextMap) => {
                 map = nextMap;
+            },
+            onMapZoomChanged: () => {
+                if (isHeatmapActive) {
+                    updateHeatmap();
+                }
             }
         }));
 }

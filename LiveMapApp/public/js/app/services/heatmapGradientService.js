@@ -51,17 +51,11 @@
         }
 
         function buildHeatmapGradientForProfile(profile) {
-            const baseRgb = parseColorToRgb(getProfileBaseColor(profile));
-            const redRgb = parseColorToRgb('#ef4444');
-            const warmRgb = mixRgb(baseRgb, redRgb, 0.55);
-            const hotRgb = mixRgb(baseRgb, redRgb, 0.78);
-
             return {
-                0.12: rgbToCss(baseRgb, 0.35),
-                0.45: rgbToCss(baseRgb, 0.82),
-                0.72: rgbToCss(warmRgb, 0.94),
-                0.9: rgbToCss(hotRgb, 1),
-                1.0: '#ef4444'
+                0.2: 'rgb(0, 0, 255)',
+                0.4: 'rgb(0, 255, 255)',
+                0.6: 'rgb(255, 255, 255)',
+                1.0: 'rgb(255, 128, 0)'
             };
         }
 

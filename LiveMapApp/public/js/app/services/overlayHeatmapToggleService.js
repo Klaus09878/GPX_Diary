@@ -10,8 +10,69 @@
         updateHeatmap,
         getTrackLayers,
         getActiveTrackName,
-        getMap
+        getMap,
+        getAllLineLayers,
+        getHeatmapLayers
     }) {
+        let hiddenLineSnapshot = [];
+
+        function isLeafletLayer(layer) {
+            return Boolean(layer && typeof layer.addTo === 'function');
+        }
+
+        function getVisibleNonHeatmapLineLayers() {
+            const map = getMap();
+            const heatmapLayerSet = new Set((getHeatmapLayers?.() || []).filter(isLeafletLayer));
+            return (getAllLineLayers?.() || [])
+                .filter(isLeafletLayer)
+                .filter(layer => !heatmapLayerSet.has(layer))
+                .filter(layer => map.hasLayer(layer));
+        }
+
+        function hideAllLineLayersWithSnapshot() {
+            const map = getMap();
+            hiddenLineSnapshot = getVisibleNonHeatmapLineLayers();
+            hiddenLineSnapshot.forEach((layer) => {
+                if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+        }
+
+        function restoreLineLayersFromSnapshot() {
+            const map = getMap();
+            const activeLineLayerSet = new Set((getAllLineLayers?.() || []).filter(isLeafletLayer));
+
+            hiddenLineSnapshot.forEach((layer) => {
+                if (!isLeafletLayer(layer)) {
+                    return;
+                }
+                if (!activeLineLayerSet.has(layer)) {
+                    return;
+                }
+                if (!map.hasLayer(layer)) {
+                    layer.addTo(map);
+                }
+            });
+
+            hiddenLineSnapshot = [];
+        }
+
+        function applyTrackVisibilityForOverlayState() {
+            const map = getMap();
+            const activeTrackName = getActiveTrackName();
+            Object.entries(getTrackLayers()).forEach(([name, layer]) => {
+                const shouldShow = getIsOverlayActive() || name === activeTrackName;
+                if (shouldShow) {
+                    if (!map.hasLayer(layer)) {
+                        layer.addTo(map);
+                    }
+                } else if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+        }
+
         function initHeatmapToggle() {
             const btn = document.getElementById('heatmap-toggle');
             if (!btn) {
@@ -24,13 +85,15 @@
                 btn.classList.toggle('active', nextHeatmapActive);
                 document.querySelector('.map-container')?.classList.toggle('heatmap-active', nextHeatmapActive);
 
-                if (!nextHeatmapActive) {
-                    clearHeatmapLayers();
+                if (nextHeatmapActive) {
+                    hideAllLineLayersWithSnapshot();
+                    updateHeatmap();
+                    return;
                 }
 
-                if (nextHeatmapActive) {
-                    updateHeatmap();
-                }
+                clearHeatmapLayers();
+                restoreLineLayersFromSnapshot();
+                applyTrackVisibilityForOverlayState();
             };
         }
 
@@ -52,18 +115,22 @@
         }
 
         function refreshOverlayVisibility() {
-            const map = getMap();
-            const activeTrackName = getActiveTrackName();
-            Object.entries(getTrackLayers()).forEach(([name, layer]) => {
-                const shouldShow = getIsOverlayActive() || name === activeTrackName;
-                if (shouldShow) {
-                    if (!map.hasLayer(layer)) {
-                        layer.addTo(map);
+            if (getIsHeatmapActive()) {
+                const map = getMap();
+                getVisibleNonHeatmapLineLayers().forEach((layer) => {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
                     }
-                } else if (map.hasLayer(layer)) {
-                    map.removeLayer(layer);
-                }
-            });
+                });
+                updateHeatmap();
+                return;
+            }
+
+            if (hiddenLineSnapshot.length) {
+                hiddenLineSnapshot = [];
+            }
+
+            applyTrackVisibilityForOverlayState();
 
             if (getIsHeatmapActive()) {
                 updateHeatmap();

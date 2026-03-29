@@ -2331,7 +2331,13 @@ header h1 {
 /* Heatmap Override */
 .heatmap-active path.leaflet-interactive {
     display: none !important;
-    /* Hide polylines when heatmap is on */
+}
+
+#map .leaflet-heatmap-layer {
+    mix-blend-mode: screen;
+    opacity: 1;
+    filter: saturate(1.18) contrast(1.04);
+    pointer-events: none;
 }
 
 /* Map Overlay Buttons (Heatmap & Overlay) */
