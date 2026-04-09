@@ -3,6 +3,7 @@
         apiBase,
         getCurrentProfile,
         setCurrentProfile,
+        performProfileSwitch,
         getAvailableProfiles,
         setAvailableProfiles,
         nextProfileSwitchRequestId,
@@ -91,6 +92,23 @@
 
                     const switchRequestId = nextProfileSwitchRequestId();
                     buttons.forEach(b => b.classList.toggle('active', b === e.currentTarget));
+
+                    if (typeof performProfileSwitch === 'function') {
+                        let switched = false;
+                        try {
+                            switched = await performProfileSwitch(nextProfile, { reloadData: false }) === true;
+                        } catch (error) {
+                            console.error(error);
+                        }
+
+                        if (!switched || switchRequestId !== getProfileSwitchRequestId()) {
+                            buttons.forEach(b => {
+                                const profile = b.getAttribute('data-profile');
+                                b.classList.toggle('active', profile === currentProfile);
+                            });
+                            return;
+                        }
+                    }
 
                     clearComparisonOverlay();
                     clearPrHighlightLayer();

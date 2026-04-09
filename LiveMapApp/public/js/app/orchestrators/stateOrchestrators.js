@@ -18,7 +18,8 @@ const frontendOrchestrators = (() => {
      * 3. Reload profile-specific data (tracks, equipment, notes)
      * 4. Rebuild UI accordingly
      */
-    async function performProfileSwitch(newProfile) {
+    async function performProfileSwitch(newProfile, options = {}) {
+        const { reloadData = true } = options;
         if (!newProfile) {
             console.warn('[Orchestrator] Profile switch requires valid profile');
             return false;
@@ -60,25 +61,27 @@ const frontendOrchestrators = (() => {
 
             // Step 3: Reload profile-specific data in parallel
             // This will trigger data load via subscription listeners
-            const [tracks, equipment, notes] = await Promise.all([
-                frontendApiClient.getTracks(newProfile).catch(err => {
-                    console.error(`[Orchestrator] Failed to load tracks for ${newProfile}:`, err);
-                    return [];
-                }),
-                frontendApiClient.getEquipment(newProfile).catch(err => {
-                    console.error(`[Orchestrator] Failed to load equipment for ${newProfile}:`, err);
-                    return [];
-                }),
-                frontendApiClient.getActivityNotes(newProfile).catch(err => {
-                    console.error(`[Orchestrator] Failed to load activity notes for ${newProfile}:`, err);
-                    return [];
-                })
-            ]);
+            if (reloadData) {
+                const [tracks, equipment, notes] = await Promise.all([
+                    frontendApiClient.getTracks(newProfile).catch(err => {
+                        console.error(`[Orchestrator] Failed to load tracks for ${newProfile}:`, err);
+                        return [];
+                    }),
+                    frontendApiClient.getEquipment(newProfile).catch(err => {
+                        console.error(`[Orchestrator] Failed to load equipment for ${newProfile}:`, err);
+                        return [];
+                    }),
+                    frontendApiClient.getActivityNotes(newProfile).catch(err => {
+                        console.error(`[Orchestrator] Failed to load activity notes for ${newProfile}:`, err);
+                        return [];
+                    })
+                ]);
 
-            // Step 4: Cache loaded data
-            const dataCaches = appStore.selectStateRaw('dataCaches');
-            dataCaches.equipment[newProfile] = equipment;
-            dataCaches.activityNotes[newProfile] = notes;
+                // Step 4: Cache loaded data
+                const dataCaches = appStore.selectStateRaw('dataCaches');
+                dataCaches.equipment[newProfile] = equipment;
+                dataCaches.activityNotes[newProfile] = notes;
+            }
 
             console.log(`[Orchestrator] Profile switch to "${newProfile}" completed successfully`);
             return true;

@@ -67,6 +67,7 @@ class FrontendAppController {
             
             updateStartupProgress({ statusText: 'Profile werden geladen...' });
             await initializeProfiles();
+            syncFoundationProfileState();
             
             updateStartupProgress({ statusText: 'Navigation wird vorbereitet...' });
             initAppNavigation();
@@ -103,9 +104,10 @@ class FrontendAppController {
             await loadAllTracks({ startup: true });
             
             updateStartupProgress({ statusText: 'Zusatzdaten werden geladen...' });
-            await loadActivityNoteSummaries(currentProfile);
-            await loadEquipment(currentProfile);
-            await loadEquipmentAssignments(currentProfile);
+            const activeProfile = getEffectiveCurrentProfile();
+            await loadActivityNoteSummaries(activeProfile);
+            await loadEquipment(activeProfile);
+            await loadEquipmentAssignments(activeProfile);
             
             updateStartupProgress({ statusText: 'Interface wird vorbereitet...' });
             renderHomeView();
@@ -138,7 +140,7 @@ const ANALYSIS_STEEP_THRESHOLD_MAX = 25;
 const ANALYSIS_SPEED_THRESHOLD_MIN = 1;
 const ANALYSIS_SPEED_THRESHOLD_MAX = 220;
 const speedThresholdService = window.createSpeedThresholdService({
-    getCurrentProfile: () => currentProfile
+    getCurrentProfile: () => getEffectiveCurrentProfile()
 });
 
 function clampNumber(value, min, max, fallback) {
@@ -1279,6 +1281,28 @@ function updateStartupProgress({ total = 0, processed = 0, statusText = '' } = {
 
 function beginStartupExperience() {
     return initializationBridgeService.beginStartupExperience();
+}
+
+function syncFoundationProfileState() {
+    if (typeof appStore === 'undefined' || !appStore || typeof appStore.setState !== 'function') {
+        return;
+    }
+
+    appStore.setState({
+        'ui.currentProfile': currentProfile,
+        'features.profileSwitchRequestId': profileSwitchRequestId
+    });
+}
+
+function getEffectiveCurrentProfile() {
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
+        const profileFromStore = appStore.selectStateRaw('ui.currentProfile');
+        if (typeof profileFromStore === 'string' && profileFromStore) {
+            return profileFromStore;
+        }
+    }
+
+    return currentProfile;
 }
 
 // ===========================================================
@@ -4803,9 +4827,10 @@ function getStartupOverlayViewApi() {
 function getProfileSwitcherViewApi() {
     return resolveViewApi('__profileSwitcherViewApi', 'createProfileSwitcherView', () => ({
             apiBase: API_BASE,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             setCurrentProfile: (nextProfile) => {
                 currentProfile = nextProfile;
+                syncFoundationProfileState();
             },
             getAvailableProfiles: () => availableProfiles,
             setAvailableProfiles: (nextProfiles) => {
@@ -4813,9 +4838,11 @@ function getProfileSwitcherViewApi() {
             },
             nextProfileSwitchRequestId: () => {
                 profileSwitchRequestId += 1;
+                syncFoundationProfileState();
                 return profileSwitchRequestId;
             },
             getProfileSwitchRequestId: () => profileSwitchRequestId,
+            performProfileSwitch: (nextProfile, options) => window.frontendOrchestrators?.performProfileSwitch?.(nextProfile, options),
             resetCompareSelectionProfile: () => {
                 compareSelection.profile = null;
             },
