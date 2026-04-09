@@ -19,7 +19,7 @@ const frontendOrchestrators = (() => {
      * 4. Rebuild UI accordingly
      */
     async function performProfileSwitch(newProfile, options = {}) {
-        const { reloadData = true } = options;
+        const { reloadData = true, bumpRequestId = true } = options;
         if (!newProfile) {
             console.warn('[Orchestrator] Profile switch requires valid profile');
             return false;
@@ -54,10 +54,15 @@ const frontendOrchestrators = (() => {
             }
 
             // Step 2: Update profile state
-            appStore.setState({
-                'ui.currentProfile': newProfile,
-                'features.profileSwitchRequestId': (appStore.selectStateRaw('features.profileSwitchRequestId') || 0) + 1
-            });
+            const nextState = {
+                'ui.currentProfile': newProfile
+            };
+
+            if (bumpRequestId) {
+                nextState['features.profileSwitchRequestId'] = (appStore.selectStateRaw('features.profileSwitchRequestId') || 0) + 1;
+            }
+
+            appStore.setState(nextState);
 
             // Step 3: Reload profile-specific data in parallel
             // This will trigger data load via subscription listeners

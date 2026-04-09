@@ -96,7 +96,7 @@
                     if (typeof performProfileSwitch === 'function') {
                         let switched = false;
                         try {
-                            switched = await performProfileSwitch(nextProfile, { reloadData: false }) === true;
+                            switched = await performProfileSwitch(nextProfile, { reloadData: false, bumpRequestId: false }) === true;
                         } catch (error) {
                             console.error(error);
                         }

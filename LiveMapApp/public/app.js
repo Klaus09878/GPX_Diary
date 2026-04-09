@@ -289,7 +289,7 @@ const prAlertsService = window.createPrAlertsService({
     formatDistanceLabel,
     formatEffortTime,
     getTrackDisplayName,
-    getCurrentProfile: () => currentProfile,
+    getCurrentProfile: () => getEffectiveCurrentProfile(),
     getTracksByProfile: (profile) => tracksByProfile[profile],
     getPrAlertBaselineByProfile: () => prAlertBaselineByProfile,
     setPrAlertBaselineByProfile: (nextValue) => {
@@ -300,7 +300,7 @@ const prAlertsService = window.createPrAlertsService({
     showToast
 });
 const analysisThresholdPresetService = window.createAnalysisThresholdPresetService({
-    getCurrentProfile: () => currentProfile,
+    getCurrentProfile: () => getEffectiveCurrentProfile(),
     normalizeAnalysisThresholdEntry,
     analysisSteepThresholdDefault: ANALYSIS_STEEP_THRESHOLD_DEFAULT,
     getSpeedThresholdsForProfile,
@@ -317,7 +317,7 @@ const analysisThresholdPresetBridgeService = window.createAnalysisThresholdPrese
     speedThresholdService
 });
 const equipmentMaintenanceService = window.createEquipmentMaintenanceService({
-    getCurrentProfile: () => currentProfile,
+    getCurrentProfile: () => getEffectiveCurrentProfile(),
     getCachedTrack,
     getEquipmentAssignmentMap,
     getEquipmentItems,
@@ -325,7 +325,7 @@ const equipmentMaintenanceService = window.createEquipmentMaintenanceService({
 });
 const persistedSelectionService = window.createPersistedSelectionService({
     viewHome: VIEW_HOME,
-    getCurrentProfile: () => currentProfile,
+    getCurrentProfile: () => getEffectiveCurrentProfile(),
     getCurrentSearchTerm: () => currentSearchTerm,
     getActiveFilters: () => activeFilters,
     getHeatmapTimeFilters: () => heatmapTimeFilters,
@@ -342,7 +342,7 @@ const persistedSelectionService = window.createPersistedSelectionService({
     },
     persistUiState,
     getTracksByProfile: (profile) => tracksByProfile[profile],
-    getActiveTrackName: () => activeTrackName,
+    getActiveTrackName: () => getEffectiveActiveTrackName(),
     ensureMapViewportReady,
     selectTrack
 });
@@ -381,7 +381,7 @@ const overlayHeatmapToggleService = window.createOverlayHeatmapToggleService({
     clearHeatmapLayers,
     updateHeatmap,
     getTrackLayers: () => trackLayers,
-    getActiveTrackName: () => activeTrackName,
+    getActiveTrackName: () => getEffectiveActiveTrackName(),
     getMap: () => map,
     getAllLineLayers: collectAllNonHeatmapLineLayers,
     getHeatmapLayers: () => heatmapLayers
@@ -391,13 +391,13 @@ const playbackControlService = window.createPlaybackControlService({
     setPlaybackKeybindingsInitialized: (nextValue) => {
         playbackKeybindingsInitialized = Boolean(nextValue);
     },
-    getActiveTrackName: () => activeTrackName,
+    getActiveTrackName: () => getEffectiveActiveTrackName(),
     getPlaybackPoints: () => playbackPoints,
-    getIsPlaying: () => isPlaying,
+    getIsPlaying: () => getEffectiveIsPlaying(),
     getPlaybackSpeed: () => playbackSpeed,
-    getPlaybackIndex: () => playbackIndex,
+    getPlaybackIndex: () => getEffectivePlaybackIndex(),
     setPlaybackIndexState: (nextValue) => {
-        playbackIndex = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
+        setEffectivePlaybackIndex(nextValue);
     },
     getPlaybackTimelineSeconds: () => playbackTimelineSeconds,
     setPlaybackTimelineSeconds: (nextValue) => {
@@ -416,7 +416,7 @@ const playbackControlService = window.createPlaybackControlService({
         playbackTimer = nextValue;
     },
     setIsPlaying: (nextValue) => {
-        isPlaying = Boolean(nextValue);
+        setEffectiveIsPlaying(nextValue);
     },
     syncAllCharts,
     rebuildPlaybackTimeline,
@@ -448,7 +448,7 @@ const heatmapGradientService = window.createHeatmapGradientService();
 const heatmapLayerService = window.createHeatmapLayerService({
     getLeaflet: () => window.L,
     getMap: () => map,
-    getCurrentProfile: () => currentProfile,
+    getCurrentProfile: () => getEffectiveCurrentProfile(),
     getCachedTracks: () => cachedTracks,
     getTrackLayers: () => trackLayers,
     getCachedTrack,
@@ -482,9 +482,9 @@ const loadingOverlayService = window.createLoadingOverlayService();
 const playbackChartSyncService = window.createPlaybackChartSyncService({
     buildPlaybackTimeline,
     getPlaybackPoints: () => playbackPoints,
-    getPlaybackIndex: () => playbackIndex,
+    getPlaybackIndex: () => getEffectivePlaybackIndex(),
     setPlaybackIndex: (nextValue) => {
-        playbackIndex = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
+        setEffectivePlaybackIndex(nextValue);
     },
     getPlaybackTimelineSeconds: () => playbackTimelineSeconds,
     setPlaybackTimelineSeconds: (nextValue) => {
@@ -943,7 +943,7 @@ async function restorePersistedTrackSelection(profile = currentProfile) {
 
 const activityDataService = window.createActivityDataService({
     apiBase: API_BASE,
-    getCurrentProfile: () => currentProfile,
+    getCurrentProfile: () => getEffectiveCurrentProfile(),
     getState: () => ({
         activityNoteSummariesByProfile,
         activityNoteLoadPromises,
@@ -1288,10 +1288,96 @@ function syncFoundationProfileState() {
         return;
     }
 
+    const storeRequestId = typeof appStore.selectStateRaw === 'function'
+        ? appStore.selectStateRaw('features.profileSwitchRequestId')
+        : null;
+
+    if (Number.isInteger(storeRequestId) && storeRequestId > profileSwitchRequestId) {
+        profileSwitchRequestId = storeRequestId;
+    }
+
     appStore.setState({
         'ui.currentProfile': currentProfile,
         'features.profileSwitchRequestId': profileSwitchRequestId
     });
+}
+
+function syncFoundationSelectionState(profile = getEffectiveCurrentProfile()) {
+    if (typeof appStore === 'undefined' || !appStore || typeof appStore.setState !== 'function') {
+        return;
+    }
+
+    const safeFilename = typeof activeTrackName === 'string' && activeTrackName ? activeTrackName : null;
+    appStore.setState({
+        'selectedTrack.profile': safeFilename ? profile : null,
+        'selectedTrack.filename': safeFilename
+    });
+}
+
+function setEffectiveActiveTrackName(filename, profile = getEffectiveCurrentProfile()) {
+    activeTrackName = typeof filename === 'string' && filename ? filename : null;
+    syncFoundationSelectionState(profile);
+    return activeTrackName;
+}
+
+function getEffectiveActiveTrackName() {
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
+        const currentProfileForRead = getEffectiveCurrentProfile();
+        const profileFromStore = appStore.selectStateRaw('selectedTrack.profile');
+        const filenameFromStore = appStore.selectStateRaw('selectedTrack.filename');
+        if (profileFromStore === currentProfileForRead && typeof filenameFromStore === 'string' && filenameFromStore) {
+            return filenameFromStore;
+        }
+        if (profileFromStore === null && filenameFromStore === null) {
+            return null;
+        }
+    }
+
+    return activeTrackName;
+}
+
+function setEffectivePlaybackIndex(nextValue) {
+    const normalized = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
+    playbackIndex = normalized;
+
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.setState === 'function') {
+        appStore.setState({ 'playback.currentIndex': normalized });
+    }
+
+    return normalized;
+}
+
+function getEffectivePlaybackIndex() {
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
+        const indexFromStore = appStore.selectStateRaw('playback.currentIndex');
+        if (Number.isFinite(Number(indexFromStore)) && Number(indexFromStore) >= 0) {
+            return Number(indexFromStore);
+        }
+    }
+
+    return playbackIndex;
+}
+
+function setEffectiveIsPlaying(nextValue) {
+    const normalized = Boolean(nextValue);
+    isPlaying = normalized;
+
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.setState === 'function') {
+        appStore.setState({ 'playback.isPlaying': normalized });
+    }
+
+    return normalized;
+}
+
+function getEffectiveIsPlaying() {
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
+        const isPlayingFromStore = appStore.selectStateRaw('playback.isPlaying');
+        if (typeof isPlayingFromStore === 'boolean') {
+            return isPlayingFromStore;
+        }
+    }
+
+    return isPlaying;
 }
 
 function getEffectiveCurrentProfile() {
@@ -1303,6 +1389,17 @@ function getEffectiveCurrentProfile() {
     }
 
     return currentProfile;
+}
+
+function getEffectiveProfileSwitchRequestId() {
+    if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
+        const requestIdFromStore = appStore.selectStateRaw('features.profileSwitchRequestId');
+        if (Number.isInteger(requestIdFromStore) && requestIdFromStore >= 0) {
+            return requestIdFromStore;
+        }
+    }
+
+    return profileSwitchRequestId;
 }
 
 // ===========================================================
@@ -1717,7 +1814,7 @@ async function selectTrack(filename) {
     const selectionRequestId = ++activeSelectionRequestId;
     const gpxLayer = cached.layer;
     
-    activeTrackName = filename;
+    setEffectiveActiveTrackName(filename, currentProfile);
     setPersistedTrackSelection(currentProfile, filename);
     stopPlayback();
     playbackPoints = [];
@@ -2808,8 +2905,8 @@ function showProfileTracks(profile) {
 
     const files = tracksByProfile[profile] || [];
 
-    if (!files.includes(activeTrackName)) {
-        activeTrackName = null;
+    if (!files.includes(getEffectiveActiveTrackName())) {
+        setEffectiveActiveTrackName(null, profile);
         playbackPoints = [];
         rebuildPlaybackTimeline();
         stopPlayback();
@@ -4231,7 +4328,7 @@ async function focusTrackFromDashboard(filename, profile = currentProfile) {
 function getStatisticsViewApi() {
     return resolveViewApi('__statisticsViewApi', 'createStatisticsView', () => ({
             getDashboardScope: () => dashboardScope,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
             createStatsScopeSwitch,
             collectTrackStatsForScope,
@@ -4269,9 +4366,9 @@ function renderStatisticsView() {
 
 function getAnalysesViewApi() {
     return resolveViewApi('__analysesViewApi', 'createAnalysesView', () => ({
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
-            getActiveTrackName: () => activeTrackName,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
             getPlaybackPoints: () => playbackPoints,
             getTracksByProfile: () => tracksByProfile,
             getAnalysisThresholds,
@@ -4367,7 +4464,7 @@ function getTrimPreviewViewApi() {
 
 function getTrackVisualStateViewApi() {
     return resolveViewApi('__trackVisualStateViewApi', 'createTrackVisualStateView', () => ({
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getTrackLayers: () => trackLayers,
             isAnalysisModeEnabled,
             isAnalysisAvailable,
@@ -4384,8 +4481,8 @@ function getTrackVisualStateViewApi() {
 
 function getTrimInteractionViewApi() {
     return resolveViewApi('__trimInteractionViewApi', 'createTrimInteractionView', () => ({
-            getActiveTrackName: () => activeTrackName,
-            getCurrentProfile: () => currentProfile,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCachedTrack,
             updateDetailsPanel,
             getTrimSelection: () => trimSelection,
@@ -4402,8 +4499,8 @@ function getTrimLifecycleViewApi() {
                 trimSelection = nextValue;
             },
             clearTrimSelectionLayers,
-            getActiveTrackName: () => activeTrackName,
-            getCurrentProfile: () => currentProfile,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCachedTrack,
             applyActiveTrackVisualState,
             refreshDetailsPanelIfPossible
@@ -4412,8 +4509,8 @@ function getTrimLifecycleViewApi() {
 
 function getTrimBeginViewApi() {
     return resolveViewApi('__trimBeginViewApi', 'createTrimBeginView', () => ({
-            getActiveTrackName: () => activeTrackName,
-            getCurrentProfile: () => currentProfile,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getPlaybackPoints: () => playbackPoints,
             isTrimModeFor,
             focusTrimSelection,
@@ -4439,7 +4536,7 @@ function getTrimBeginViewApi() {
 function getTrimCommitViewApi() {
     return resolveViewApi('__trimCommitViewApi', 'createTrimCommitView', () => ({
             getTrimSelection: () => trimSelection,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             calculateTrimSummary,
             apiBase: API_BASE,
             showToast,
@@ -4507,8 +4604,8 @@ function getOutlierModeViewApi() {
                 outlierSelection = nextValue;
             },
             clearOutlierSelectionLayers,
-            getActiveTrackName: () => activeTrackName,
-            getCurrentProfile: () => currentProfile,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCachedTrack,
             applyActiveTrackVisualState,
             refreshDetailsPanelIfPossible,
@@ -4525,7 +4622,7 @@ function getOutlierModeViewApi() {
 function getOutlierCleanupViewApi() {
     return resolveViewApi('__outlierCleanupViewApi', 'createOutlierCleanupView', () => ({
             getOutlierSelection: () => outlierSelection,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             showToast,
             apiBase: API_BASE,
             getCachedTrack,
@@ -4540,7 +4637,7 @@ function getOutlierCleanupViewApi() {
 
 function getComparisonSelectionViewApi() {
     return resolveViewApi('__comparisonSelectionViewApi', 'createComparisonSelectionView', () => ({
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getTracksByProfile: () => tracksByProfile,
             getCompareSelection: () => compareSelection,
             setCompareSelection: (nextValue) => {
@@ -4587,9 +4684,9 @@ function getComparisonViewApi() {
     return resolveViewApi('__comparisonViewApi', 'createComparisonView', () => ({
             initStandardModal,
             ensureComparisonSelection,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
-            getActiveTrackName: () => activeTrackName,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
             getCachedTrack,
             getTrackDisplayName,
             formatDashboardDate,
@@ -4632,7 +4729,7 @@ async function renderComparisonModal() {
 function getPrAnalysisViewApi() {
     return resolveViewApi('__prAnalysisViewApi', 'createPrAnalysisView', () => ({
             initStandardModal,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
             collectProfileAnalysisEntries,
             loadSegmentFavorites,
@@ -4654,7 +4751,7 @@ function initPrAnalysisModal() {
 function getEquipmentViewApi() {
     return resolveViewApi('__equipmentViewApi', 'createEquipmentView', () => ({
             initStandardModal,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
             getEquipmentEditorDraft,
             clearEquipmentEditorDraft,
@@ -4693,7 +4790,7 @@ function getNavigationViewApi() {
 
 function getFilterSearchViewApi() {
     return resolveViewApi('__filterSearchViewApi', 'createFilterSearchView', () => ({
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getTrackDataCache: () => trackDataCache,
             getTrackLayers: () => trackLayers,
             getMap: () => map,
@@ -4711,9 +4808,9 @@ function getFilterSearchViewApi() {
             },
             searchInputDebounceMs: SEARCH_INPUT_DEBOUNCE_MS,
             createTrackListItem,
-            getActiveTrackName: () => activeTrackName,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
             resetActiveTrackSelection: () => {
-                activeTrackName = null;
+                setEffectiveActiveTrackName(null, getEffectiveCurrentProfile());
                 playbackPoints = [];
                 rebuildPlaybackTimeline();
                 stopPlayback();
@@ -4771,7 +4868,7 @@ function getHomeTrackNavigationViewApi() {
 function getHomeViewApi() {
     return resolveViewApi('__homeViewApi', 'createHomeView', () => ({
             getActivityNoteSummariesByProfile: () => activityNoteSummariesByProfile,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getTrackDataCache: () => trackDataCache,
             getEquipmentReminderSummary,
             getEquipmentItems,
@@ -4787,7 +4884,7 @@ function getHomeViewApi() {
 function getActivityNoteViewApi() {
     return resolveViewApi('__activityNoteViewApi', 'createActivityNoteView', () => ({
             noteScoreFields: NOTE_SCORE_FIELDS,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getActivityNoteSummary,
             fetchActivityNote,
             saveActivityNote,
@@ -4799,7 +4896,7 @@ function getActivityNoteViewApi() {
 
 function getEquipmentTrackViewApi() {
     return resolveViewApi('__equipmentTrackViewApi', 'createEquipmentTrackView', () => ({
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getEquipmentItems,
             buildEquipmentUsageMap,
             getTrackEquipmentAssignment,
@@ -4841,7 +4938,7 @@ function getProfileSwitcherViewApi() {
                 syncFoundationProfileState();
                 return profileSwitchRequestId;
             },
-            getProfileSwitchRequestId: () => profileSwitchRequestId,
+            getProfileSwitchRequestId: () => getEffectiveProfileSwitchRequestId(),
             performProfileSwitch: (nextProfile, options) => window.frontendOrchestrators?.performProfileSwitch?.(nextProfile, options),
             resetCompareSelectionProfile: () => {
                 compareSelection.profile = null;
@@ -4890,8 +4987,8 @@ function getAnalysisModeViewApi() {
             setAnalysisModeState: (nextMode) => {
                 analysisMode = nextMode;
             },
-            getActiveTrackName: () => activeTrackName,
-            getCurrentProfile: () => currentProfile,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCachedTrack,
             getPlaybackPoints: () => playbackPoints,
             clearAnalysisOverlayLayers,
@@ -4957,8 +5054,8 @@ function getWeatherStateViewApi() {
 
 function getWeatherRequestPayloadViewApi() {
     return resolveViewApi('__weatherRequestPayloadViewApi', 'createWeatherRequestPayloadView', () => ({
-            getCurrentProfile: () => currentProfile,
-            getActiveTrackName: () => activeTrackName,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
             getPlaybackPoints: () => playbackPoints,
             getCachedTrack,
             toFiniteNumber
@@ -4968,12 +5065,12 @@ function getWeatherRequestPayloadViewApi() {
 function getWeatherLoadViewApi() {
     return resolveViewApi('__weatherLoadViewApi', 'createWeatherLoadView', () => ({
             apiBase: API_BASE,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCachedTrack,
             getTrackWeatherState,
             setTrackWeatherState,
             getWeatherRequestPayloadForTrack,
-            getActiveTrackName: () => activeTrackName,
+            getActiveTrackName: () => getEffectiveActiveTrackName(),
             refreshDetailsPanelIfPossible,
             showToast
         }));
@@ -4981,7 +5078,7 @@ function getWeatherLoadViewApi() {
 
 function getWeatherCardViewApi() {
     return resolveViewApi('__weatherCardViewApi', 'createWeatherCardView', () => ({
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             getTrackWeatherState,
             describeWeatherCode,
             formatWeatherNumber,
@@ -5008,7 +5105,7 @@ function getHomeQuickActionsViewApi() {
 function getDeleteAllViewApi() {
     return resolveViewApi('__deleteAllViewApi', 'createDeleteAllView', () => ({
             apiBase: API_BASE,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             showToast,
             loadAllTracks
         }));
@@ -5017,7 +5114,7 @@ function getDeleteAllViewApi() {
 function getUploadViewApi() {
     return resolveViewApi('__uploadViewApi', 'createUploadView', () => ({
             apiBase: API_BASE,
-            getCurrentProfile: () => currentProfile,
+            getCurrentProfile: () => getEffectiveCurrentProfile(),
             showToast,
             loadAllTracks,
             closeModalWithA11y,
