@@ -44,6 +44,10 @@ function createAppContext({ rootDir, port }) {
     const API_WRITE_RATE_WINDOW_MS = appConfig.apiWriteRateWindowMs;
     const API_WRITE_RATE_MAX_REQUESTS = appConfig.apiWriteRateMaxRequests;
 
+    if (appConfig.trustProxy) {
+        app.set('trust proxy', true);
+    }
+
     const weatherHistoryService = createWeatherHistoryService({
         cacheMaxAgeMs: WEATHER_CACHE_MAX_AGE_MS,
         fetchTimeoutMs: WEATHER_FETCH_TIMEOUT_MS
@@ -71,6 +75,7 @@ function createAppContext({ rootDir, port }) {
         applyWriteRateLimit,
         setApiNoStoreCache
     } = createApiMiddlewares({
+        trustProxy: appConfig.trustProxy,
         apiRateWindowMs: API_RATE_WINDOW_MS,
         apiRateMaxRequests: API_RATE_MAX_REQUESTS,
         apiTrackReadRateWindowMs: API_TRACK_READ_RATE_WINDOW_MS,
@@ -79,8 +84,21 @@ function createAppContext({ rootDir, port }) {
         apiWriteRateMaxRequests: API_WRITE_RATE_MAX_REQUESTS
     });
 
+    const allowedCorsOrigins = new Set(appConfig.corsAllowedOrigins || []);
+    const corsOptions = {
+        origin: (origin, callback) => {
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            return callback(null, allowedCorsOrigins.has(origin));
+        },
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    };
+
     app.use(applySecurityHeaders);
-    app.use(cors());
+    app.use(cors(corsOptions));
     app.use(express.json({ limit: API_JSON_BODY_LIMIT }));
 
     app.use('/api', applyApiRateLimit);

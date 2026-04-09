@@ -6,7 +6,9 @@ describe('AppConfig', () => {
     const envBackup = {
         BUY_ME_A_COFFEE_URL: process.env.BUY_ME_A_COFFEE_URL,
         SUPPORT_URL: process.env.SUPPORT_URL,
-        PORT: process.env.PORT
+        PORT: process.env.PORT,
+        TRUST_PROXY: process.env.TRUST_PROXY,
+        CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS
     };
 
     afterEach(() => {
@@ -26,6 +28,18 @@ describe('AppConfig', () => {
             delete process.env.PORT;
         } else {
             process.env.PORT = envBackup.PORT;
+        }
+
+        if (envBackup.TRUST_PROXY === undefined) {
+            delete process.env.TRUST_PROXY;
+        } else {
+            process.env.TRUST_PROXY = envBackup.TRUST_PROXY;
+        }
+
+        if (envBackup.CORS_ALLOWED_ORIGINS === undefined) {
+            delete process.env.CORS_ALLOWED_ORIGINS;
+        } else {
+            process.env.CORS_ALLOWED_ORIGINS = envBackup.CORS_ALLOWED_ORIGINS;
         }
     });
 
@@ -56,5 +70,28 @@ describe('AppConfig', () => {
         expect(config.dataDir).toBe(path.join(rootDir, 'data'));
         expect(config.metadataDbPath).toBe(path.join(rootDir, 'data', 'app-metadata.sqlite'));
         expect(config.sqlJsDistDir).toBe(path.join(rootDir, 'node_modules', 'sql.js', 'dist'));
+    });
+
+    it('parses trust proxy and CORS origins from env', () => {
+        process.env.TRUST_PROXY = 'true';
+        process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com, http://localhost:8080 ,invalid';
+
+        const config = new AppConfig({ port: 3123 });
+
+        expect(config.trustProxy).toBe(true);
+        expect(config.corsAllowedOrigins).toEqual([
+            'https://app.example.com',
+            'http://localhost:8080'
+        ]);
+    });
+
+    it('uses safe CORS defaults when env variable is missing', () => {
+        delete process.env.CORS_ALLOWED_ORIGINS;
+
+        const config = new AppConfig({ port: 3333 });
+
+        expect(config.corsAllowedOrigins).toContain('http://localhost:3333');
+        expect(config.corsAllowedOrigins).toContain('http://127.0.0.1:3333');
+        expect(config.corsAllowedOrigins).toContain('http://localhost:5173');
     });
 });

@@ -8,21 +8,21 @@ function applySecurityHeaders(req, res, next) {
     next();
 }
 
-function getRequestClientKey(req) {
+function getRequestClientKey(req, { trustProxy = false } = {}) {
     const forwardedFor = req.headers['x-forwarded-for'];
-    if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    if (trustProxy && typeof forwardedFor === 'string' && forwardedFor.trim()) {
         return forwardedFor.split(',')[0].trim();
     }
 
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-function createIpRateLimiter({ windowMs, maxRequests, keyPrefix = 'api' }) {
+function createIpRateLimiter({ windowMs, maxRequests, keyPrefix = 'api', trustProxy = false }) {
     const bucket = new Map();
 
     return (req, res, next) => {
         const nowMs = Date.now();
-        const clientKey = `${keyPrefix}:${getRequestClientKey(req)}`;
+        const clientKey = `${keyPrefix}:${getRequestClientKey(req, { trustProxy })}`;
 
         if (bucket.size > 10000) {
             for (const [key, state] of bucket.entries()) {
@@ -52,6 +52,7 @@ function createIpRateLimiter({ windowMs, maxRequests, keyPrefix = 'api' }) {
 }
 
 function createApiMiddlewares({
+    trustProxy = false,
     apiRateWindowMs,
     apiRateMaxRequests,
     apiTrackReadRateWindowMs,
@@ -62,19 +63,22 @@ function createApiMiddlewares({
     const apiRateLimiter = createIpRateLimiter({
         windowMs: apiRateWindowMs,
         maxRequests: apiRateMaxRequests,
-        keyPrefix: 'api'
+        keyPrefix: 'api',
+        trustProxy
     });
 
     const apiTrackReadRateLimiter = createIpRateLimiter({
         windowMs: apiTrackReadRateWindowMs,
         maxRequests: apiTrackReadRateMaxRequests,
-        keyPrefix: 'api-track-read'
+        keyPrefix: 'api-track-read',
+        trustProxy
     });
 
     const apiWriteRateLimiter = createIpRateLimiter({
         windowMs: apiWriteRateWindowMs,
         maxRequests: apiWriteRateMaxRequests,
-        keyPrefix: 'api-write'
+        keyPrefix: 'api-write',
+        trustProxy
     });
 
     function applyWriteRateLimit(req, res, next) {
