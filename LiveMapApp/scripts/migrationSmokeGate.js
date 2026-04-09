@@ -52,9 +52,10 @@ function cleanupPort(port) {
                     const match = line.trim().split(/\s+/);
                     if (match.length > 0) {
                         const pid = match[match.length - 1];
-                        if (pid && pid !== 'PID' && /^\d+$/.test(pid)) {
-                            logStep(`Killing existing process on port ${port} (PID: ${pid})`);
-                            execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
+                        const pidNumber = Number.parseInt(pid, 10);
+                        if (Number.isInteger(pidNumber) && pidNumber > 0 && pidNumber !== process.pid) {
+                            logStep(`Killing existing process on port ${port} (PID: ${pidNumber})`);
+                            execSync(`taskkill /PID ${pidNumber} /F`, { stdio: 'ignore' });
                         }
                     }
                 }
@@ -69,9 +70,11 @@ function cleanupPort(port) {
                 for (let i = 1; i < lines.length; i++) {
                     const tokens = lines[i].split(/\s+/);
                     if (tokens.length > 1) {
-                        const pid = tokens[1];
-                        logStep(`Killing existing process on port ${port} (PID: ${pid})`);
-                        execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+                        const pidNumber = Number.parseInt(tokens[1], 10);
+                        if (Number.isInteger(pidNumber) && pidNumber > 0 && pidNumber !== process.pid) {
+                            logStep(`Killing existing process on port ${port} (PID: ${pidNumber})`);
+                            execSync(`kill -9 ${pidNumber}`, { stdio: 'ignore' });
+                        }
                     }
                 }
             } catch (e) {
