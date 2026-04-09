@@ -1,6 +1,22 @@
 const fs = require('fs');
 const fsp = require('fs').promises;
 const csv = require('csv-parser');
+const path = require('path');
+
+const HEALTH_UPLOAD_ALLOWED_MIME_TYPES = new Set([
+    'text/csv',
+    'application/csv',
+    'application/vnd.ms-excel',
+    'text/plain'
+]);
+
+function normalizeMimeType(mimeType) {
+    if (typeof mimeType !== 'string') {
+        return '';
+    }
+
+    return mimeType.split(';')[0].trim().toLowerCase();
+}
 
 function createHealthRoutes({ upload, metadataStore }) {
     /**
@@ -22,6 +38,19 @@ function createHealthRoutes({ upload, metadataStore }) {
     async function handleUploadHealth(req, res) {
         if (!req.file) {
             return res.status(400).json({ error: 'Keine Datei hochgeladen' });
+        }
+
+        const originalName = typeof req.file.originalname === 'string' ? req.file.originalname : '';
+        const extension = path.extname(originalName).toLowerCase();
+        const mimeType = normalizeMimeType(req.file.mimetype);
+
+        if (extension !== '.csv' || !HEALTH_UPLOAD_ALLOWED_MIME_TYPES.has(mimeType)) {
+            if (req.file.path) {
+                fsp.unlink(req.file.path).catch(() => {
+                    // Best effort cleanup
+                });
+            }
+            return res.status(415).json({ error: 'Nur CSV-Dateien mit gültigem MIME-Typ sind erlaubt.' });
         }
 
         const filePath = req.file.path;
@@ -79,6 +108,15 @@ function createHealthRoutes({ upload, metadataStore }) {
 
                         for (const [dateKey, steps] of stepsByDate.entries()) {
                             await metadataStore.upsertHealthSteps(dateKey, steps);
+                        }
+
+                        if (stepsByDate.size === 0) {
+                            try {
+                                await fsp.unlink(filePath);
+                            } catch (e) {
+                                // Ignore cleanup errors
+                            }
+                            return res.status(400).json({ error: 'Keine verwertbaren Schritt-Daten gefunden.' });
                         }
 
                         // Use async unlink

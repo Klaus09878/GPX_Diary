@@ -90,7 +90,8 @@ describe('uploadRoutes', () => {
             filesFactory: () => [{
                 path: incomingFile,
                 originalname: 'incoming.gpx',
-                safeOriginalName: 'incoming.gpx'
+                safeOriginalName: 'incoming.gpx',
+                mimetype: 'application/gpx+xml'
             }]
         });
 
@@ -106,5 +107,26 @@ describe('uploadRoutes', () => {
         });
         expect(metadataStore.syncProfileActivities).toHaveBeenCalledWith('rennrad', ['incoming.gpx']);
         expect(fs.existsSync(path.join(profileDir, 'incoming.gpx'))).toBe(true);
+    });
+
+    it('rejects files with disallowed MIME type', async () => {
+        const incomingFile = path.join(tempDir, 'malicious.gpx');
+        fs.writeFileSync(incomingFile, '<gpx></gpx>', 'utf8');
+
+        const { app, metadataStore } = buildApp({
+            filesFactory: () => [{
+                path: incomingFile,
+                originalname: 'malicious.gpx',
+                safeOriginalName: 'malicious.gpx',
+                mimetype: 'application/x-msdownload'
+            }]
+        });
+
+        const response = await request(app)
+            .post('/api/upload/rennrad')
+            .expect(415);
+
+        expect(response.body.error).toBe('Keine Datei mit zulässigem Dateityp hochgeladen.');
+        expect(metadataStore.syncProfileActivities).not.toHaveBeenCalled();
     });
 });

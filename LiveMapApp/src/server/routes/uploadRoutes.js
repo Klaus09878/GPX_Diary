@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
+const TRACK_UPLOAD_MIME_TYPES_BY_EXTENSION = {
+    '.gpx': new Set(['application/gpx+xml', 'application/xml', 'text/xml', 'text/plain']),
+    '.fit': new Set(['application/octet-stream', 'application/fit']),
+    '.fir': new Set(['application/octet-stream'])
+};
+
 function createUploadDomain({
     profiles,
     dataDir,
@@ -18,6 +24,26 @@ function createUploadDomain({
     metadataStore
 }) {
     const pendingDuplicates = new Map();
+
+    function normalizeMimeType(mimeType) {
+        if (typeof mimeType !== 'string') {
+            return '';
+        }
+
+        return mimeType.split(';')[0].trim().toLowerCase();
+    }
+
+    function isAllowedTrackMimeType(safeOriginalName, mimeType) {
+        const ext = path.extname(safeOriginalName || '').toLowerCase();
+        const allowedMimeTypes = TRACK_UPLOAD_MIME_TYPES_BY_EXTENSION[ext];
+        const normalizedMimeType = normalizeMimeType(mimeType);
+
+        if (!allowedMimeTypes || !normalizedMimeType) {
+            return false;
+        }
+
+        return allowedMimeTypes.has(normalizedMimeType);
+    }
 
     function getAvailableFilename(profilePath, preferredName) {
         const ext = path.extname(preferredName);
@@ -119,6 +145,16 @@ function createUploadDomain({
                 try { fs.unlinkSync(file.path); } catch (_) { }
                 invalidateGpxMetaCache(file.path);
                 discarded.push({ name: file.originalname, reason: 'Ungültiger Dateiname oder Dateityp.' });
+                continue;
+            }
+
+            if (!isAllowedTrackMimeType(safeOriginalName, file.mimetype)) {
+                try { fs.unlinkSync(file.path); } catch (_) { }
+                invalidateGpxMetaCache(file.path);
+                discarded.push({
+                    name: safeOriginalName,
+                    reason: 'Dateityp nicht erlaubt (MIME-Prüfung fehlgeschlagen).'
+                });
                 continue;
             }
 
@@ -268,6 +304,13 @@ function createUploadDomain({
                 uploaded: results,
                 discarded,
                 conflicts
+            });
+        }
+
+        if (results.length === 0 && discarded.length > 0) {
+            return res.status(415).json({
+                error: 'Keine Datei mit zulässigem Dateityp hochgeladen.',
+                discarded
             });
         }
 

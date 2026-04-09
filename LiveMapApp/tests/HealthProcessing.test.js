@@ -37,7 +37,11 @@ describe('Health upload route', () => {
 
         const upload = {
             single: () => (req, res, next) => {
-                req.file = { path: tempFilePath };
+                req.file = {
+                    path: tempFilePath,
+                    originalname: 'health.csv',
+                    mimetype: 'text/csv'
+                };
                 next();
             }
         };
@@ -55,5 +59,36 @@ describe('Health upload route', () => {
         expect(metadataStore.upsertHealthSteps).toHaveBeenCalledTimes(1);
         expect(metadataStore.upsertHealthSteps).toHaveBeenCalledWith('2026-03-04', 5847);
         expect(fs.existsSync(tempFilePath)).toBe(false);
+    });
+
+    it('rejects non-csv or invalid MIME uploads', async () => {
+        tempFilePath = path.join(os.tmpdir(), `health-upload-invalid-${Date.now()}.csv`);
+        fs.writeFileSync(tempFilePath, 'type,startDate,steps\nHKQuantityTypeIdentifierStepCount,2026-03-04,1234', 'utf-8');
+
+        const metadataStore = {
+            upsertHealthSteps: jest.fn().mockResolvedValue(undefined)
+        };
+
+        const upload = {
+            single: () => (req, res, next) => {
+                req.file = {
+                    path: tempFilePath,
+                    originalname: 'health.csv',
+                    mimetype: 'application/octet-stream'
+                };
+                next();
+            }
+        };
+
+        const app = express();
+        app.use(express.json());
+        createHealthRoutes({ upload, metadataStore }).registerRoutes(app);
+
+        const response = await request(app)
+            .post('/api/upload/health')
+            .expect(415);
+
+        expect(response.body).toEqual({ error: 'Nur CSV-Dateien mit gültigem MIME-Typ sind erlaubt.' });
+        expect(metadataStore.upsertHealthSteps).not.toHaveBeenCalled();
     });
 });
