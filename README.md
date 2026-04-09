@@ -20,21 +20,33 @@ Lokale Web-App zur Verwaltung und Analyse von Touren/Trainingsdaten (GPX/FIT/Hea
 
 ## Voraussetzungen
 
-- Node.js LTS (empfohlen: v20+)
-- npm
-- Internetverbindung für Karten-/CDN-Komponenten
+- Windows-Version: keine lokale Node.js-Installation notwendig, wenn `LiveMapApp/runtime/node` enthalten ist.
+- Internetverbindung fuer Karten-/CDN-Komponenten.
 
-## Schnellstart (alle Plattformen)
+Empfohlene Runtime-Policy:
+
+- Mitgelieferte Runtime: Node 20 LTS (Major-Pin).
+- Lokales Node.js ist optional und nur fuer Entwicklungsfallback gedacht.
+
+## Schnellstart (Windows, ohne eigene Node-Installation)
+
+Im Projekt-Hauptordner:
+
+1. Doppelklick auf `start_app.bat`
+2. Das Script verwendet die mitgelieferte Runtime unter `LiveMapApp/runtime/node`
+3. Bei erstem Start werden die Abhaengigkeiten automatisch installiert
+
+Danach im Browser oeffnen:
+
+- `http://localhost:3000`
+
+## Schnellstart (Entwicklung mit lokal installiertem Node, optional)
 
 ```bash
 cd LiveMapApp
 npm install
 npm start
 ```
-
-Danach im Browser öffnen:
-
-- `http://localhost:3000`
 
 ## Schnellstart (Windows mit Batch-Datei)
 
@@ -45,8 +57,26 @@ Im Projekt-Hauptordner:
 Das Skript:
 
 - wechselt automatisch in `LiveMapApp`
-- installiert bei Bedarf `node_modules`
+- verwendet priorisiert die portable Runtime aus `LiveMapApp/runtime/node`
+- installiert bei Bedarf `node_modules` mit portablem npm
 - öffnet den Browser auf `http://localhost:3000`
+
+Wenn die Runtime fehlt, bricht das Script mit klarer Meldung ab.
+Nur fuer Entwickler kann ein globaler Fallback erzwungen werden:
+
+```bat
+set "USE_GLOBAL_NODE_FALLBACK=1"
+start_app.bat
+```
+
+Portable Runtime Verifikation:
+
+```bash
+cd LiveMapApp
+npm run verify:portable
+```
+
+Details zur Pflege der Runtime stehen in `LiveMapApp/runtime/README_NODE_RUNTIME.md`.
 
 ## Optional: Buy Me a Coffee
 
@@ -80,7 +110,7 @@ Standardprofile:
 ## Häufige Probleme
 
 - **Port 3000 belegt:** Prozess auf Port 3000 beenden oder `PORT` setzen.
-- **Node nicht gefunden:** Node.js LTS installieren und erneut starten.
+- **Portable Runtime fehlt:** Stelle sicher, dass `LiveMapApp/runtime/node/node.exe` und `LiveMapApp/runtime/node/npm.cmd` vorhanden sind.
 - **Leere Karte/Teile fehlen:** Internetverbindung prüfen (CDN/Karten-Tiles).
 
 ## Für GitHub-Upload (Checkliste)
