@@ -4,6 +4,10 @@ function createCoreApiRoutes({
     weatherHistoryService,
     WeatherHistoryServiceError
 }) {
+    function isClientErrorStatus(statusCode) {
+        return Number.isInteger(statusCode) && statusCode >= 400 && statusCode < 500;
+    }
+
     function registerRoutes(app) {
         app.get('/api/profiles', (req, res) => {
             return res.json(profiles);
@@ -27,11 +31,16 @@ function createCoreApiRoutes({
                 return res.json(weatherPayload);
             } catch (err) {
                 if (err instanceof WeatherHistoryServiceError && Number.isInteger(err.statusCode)) {
-                    return res.status(err.statusCode).json({ error: err.message });
+                    if (isClientErrorStatus(err.statusCode)) {
+                        return res.status(err.statusCode).json({ error: err.message });
+                    }
+
+                    console.error('Weather service failure:', err);
+                    return res.status(err.statusCode).json({ error: 'Wetterdaten konnten nicht geladen werden.' });
                 }
 
                 console.error('Error fetching weather data:', err);
-                return res.status(502).json({ error: err.message || 'Wetterdaten konnten nicht geladen werden.' });
+                return res.status(502).json({ error: 'Wetterdaten konnten nicht geladen werden.' });
             }
         });
     }

@@ -2,6 +2,12 @@ const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
 
+function createExposedError(message) {
+    const error = new Error(message);
+    error.expose = true;
+    return error;
+}
+
 function createTrackRoutes({
     profiles,
     syncMetadataForProfile,
@@ -110,7 +116,7 @@ function createTrackRoutes({
 
                 const meta = await getGpxMetaCached(tempPath);
                 if (!meta || meta.pointCount < 2) {
-                    throw new Error('Der zugeschnittene Track ist zu kurz.');
+                    throw createExposedError('Der zugeschnittene Track ist zu kurz.');
                 }
 
                 replaceFileSafely(tempPath, filePath);
@@ -132,7 +138,10 @@ function createTrackRoutes({
                 } catch (_) {}
 
                 invalidateGpxMetaCache(tempPath);
-                return res.status(400).json({ error: err.message || 'Training konnte nicht zugeschnitten werden.' });
+                const errorMessage = err && err.expose === true
+                    ? err.message
+                    : 'Training konnte nicht zugeschnitten werden.';
+                return res.status(400).json({ error: errorMessage });
             }
         });
 
@@ -160,7 +169,7 @@ function createTrackRoutes({
 
                 const meta = await getGpxMetaCached(tempPath);
                 if (!meta || meta.pointCount < 2) {
-                    throw new Error('Der bereinigte Track ist zu kurz.');
+                    throw createExposedError('Der bereinigte Track ist zu kurz.');
                 }
 
                 replaceFileSafely(tempPath, filePath);
@@ -184,7 +193,10 @@ function createTrackRoutes({
                 } catch (_) {}
 
                 invalidateGpxMetaCache(tempPath);
-                return res.status(400).json({ error: err.message || 'Ausreißer konnten nicht bereinigt werden.' });
+                const errorMessage = err && err.expose === true
+                    ? err.message
+                    : 'Ausreißer konnten nicht bereinigt werden.';
+                return res.status(400).json({ error: errorMessage });
             }
         });
 

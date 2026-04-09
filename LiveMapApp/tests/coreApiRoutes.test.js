@@ -67,7 +67,7 @@ describe('coreApiRoutes', () => {
         expect(response.body).toEqual({ error: 'Bad weather request' });
     });
 
-    it('returns 502 for unexpected weather errors', async () => {
+    it('returns sanitized 502 for unexpected weather errors', async () => {
         const { app, weatherHistoryService } = buildApp();
         weatherHistoryService.getWeatherHistory.mockRejectedValue(new Error('provider unavailable'));
 
@@ -75,6 +75,19 @@ describe('coreApiRoutes', () => {
             .get('/api/weather/history')
             .expect(502);
 
-        expect(response.body).toEqual({ error: 'provider unavailable' });
+        expect(response.body).toEqual({ error: 'Wetterdaten konnten nicht geladen werden.' });
+    });
+
+    it('sanitizes WeatherHistoryServiceError responses for server-side status codes', async () => {
+        const { app, weatherHistoryService, LocalWeatherError } = buildApp();
+        weatherHistoryService.getWeatherHistory.mockRejectedValue(
+            new LocalWeatherError('Internal provider detail', 502)
+        );
+
+        const response = await request(app)
+            .get('/api/weather/history')
+            .expect(502);
+
+        expect(response.body).toEqual({ error: 'Wetterdaten konnten nicht geladen werden.' });
     });
 });

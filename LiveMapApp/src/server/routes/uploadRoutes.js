@@ -119,10 +119,12 @@ function createUploadDomain({
             }
 
             if (err instanceof multer.MulterError) {
-                return res.status(400).json({ error: err.message });
+                console.error('Multer upload error:', err);
+                return res.status(400).json({ error: 'Upload konnte nicht verarbeitet werden.' });
             }
 
-            return res.status(400).json({ error: err.message || 'Upload failed' });
+            console.error('Upload middleware error:', err);
+            return res.status(400).json({ error: 'Upload fehlgeschlagen.' });
         });
     }
 
