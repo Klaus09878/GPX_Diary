@@ -260,6 +260,86 @@ let equipmentAssignmentsByProfile = {};
 let equipmentAssignmentsLoadPromises = {};
 let equipmentEditorDraftByProfile = {};
 
+const profileManager = window.createProfileManager({
+    initialProfile: currentProfile,
+    initialAvailableProfiles: availableProfiles,
+    initialSwitchRequestId: profileSwitchRequestId
+});
+
+const uiStateManager = window.createUiStateManager({
+    initialCurrentView: currentView,
+    initialStartupIntroDismissed: startupIntroDismissed,
+    initialDashboardScope: dashboardScope,
+    initialSearchTerm: currentSearchTerm,
+    initialActiveFilters: Array.from(activeFilters)
+});
+
+const mapStateManager = window.createMapStateManager({
+    getMap: () => map,
+    setMap: (nextMap) => {
+        map = nextMap;
+    },
+    getIsHeatmapActive: () => isHeatmapActive,
+    setIsHeatmapActive: (nextValue) => {
+        isHeatmapActive = Boolean(nextValue);
+    },
+    getIsGlobalHeatmapActive: () => isGlobalHeatmapActive,
+    setIsGlobalHeatmapActive: (nextValue) => {
+        isGlobalHeatmapActive = Boolean(nextValue);
+    },
+    getIsOverlayActive: () => isOverlayActive,
+    setIsOverlayActive: (nextValue) => {
+        isOverlayActive = Boolean(nextValue);
+    },
+    getHeatmapLayers: () => heatmapLayers,
+    setHeatmapLayers: (nextLayers) => {
+        heatmapLayers = Array.isArray(nextLayers) ? nextLayers : [];
+    }
+});
+
+const playbackStateManager = window.createPlaybackStateManager({
+    getPlaybackKeybindingsInitialized: () => playbackKeybindingsInitialized,
+    setPlaybackKeybindingsInitialized: (nextValue) => {
+        playbackKeybindingsInitialized = Boolean(nextValue);
+    },
+    getPlaybackPoints: () => playbackPoints,
+    setPlaybackPoints: (nextPoints) => {
+        playbackPoints = Array.isArray(nextPoints) ? nextPoints : [];
+    },
+    getPlaybackSpeed: () => playbackSpeed,
+    setPlaybackSpeed: (nextSpeed) => {
+        playbackSpeed = Number(nextSpeed);
+    },
+    getPlaybackIndex: () => playbackIndex,
+    setPlaybackIndex: (nextIndex) => {
+        playbackIndex = Number(nextIndex);
+    },
+    getPlaybackTimelineSeconds: () => playbackTimelineSeconds,
+    setPlaybackTimelineSeconds: (nextTimeline) => {
+        playbackTimelineSeconds = Array.isArray(nextTimeline) ? nextTimeline : [];
+    },
+    getPlaybackVirtualSeconds: () => playbackVirtualSeconds,
+    setPlaybackVirtualSeconds: (nextValue) => {
+        playbackVirtualSeconds = Number(nextValue);
+    },
+    getPlaybackLastTickMs: () => playbackLastTickMs,
+    setPlaybackLastTickMs: (nextValue) => {
+        playbackLastTickMs = Number(nextValue);
+    },
+    getPlaybackTimer: () => playbackTimer,
+    setPlaybackTimer: (nextTimer) => {
+        playbackTimer = nextTimer;
+    },
+    getPlaybackMarker: () => playbackMarker,
+    setPlaybackMarker: (nextMarker) => {
+        playbackMarker = nextMarker;
+    },
+    getIsPlaying: () => isPlaying,
+    setIsPlaying: (nextValue) => {
+        isPlaying = Boolean(nextValue);
+    }
+});
+
 // ===========================================================
 const HEATMAP_SAMPLE_DISTANCE_M = 20;
 const HEATMAP_GRID_FACTOR = 5000;
@@ -326,14 +406,14 @@ const equipmentMaintenanceService = window.createEquipmentMaintenanceService({
 const persistedSelectionService = window.createPersistedSelectionService({
     viewHome: VIEW_HOME,
     getCurrentProfile: () => getEffectiveCurrentProfile(),
-    getCurrentSearchTerm: () => currentSearchTerm,
-    getActiveFilters: () => activeFilters,
+    getCurrentSearchTerm: () => uiStateManager.getCurrentSearchTerm(),
+    getActiveFilters: () => uiStateManager.getActiveFilters(),
     getHeatmapTimeFilters: () => heatmapTimeFilters,
     syncAnalysisToggleButtons,
     updateAnalysisControlAvailability,
     updateDashboardScopeButtons,
     setCurrentView: (nextView) => {
-        currentView = nextView;
+        currentView = uiStateManager.setCurrentView(nextView);
     },
     setActiveView,
     getLastSelectedTrackByProfile: () => lastSelectedTrackByProfile,
@@ -349,7 +429,7 @@ const persistedSelectionService = window.createPersistedSelectionService({
 const mapCoordinateValidationService = window.createMapCoordinateValidationService();
 const mapViewportSafetyService = window.createMapViewportSafetyService({
     getMap: () => map,
-    getCurrentView: () => currentView,
+    getCurrentView: () => uiStateManager.getCurrentView(),
     mapView: VIEW_MAP,
     isValidMapCoordinatePair,
     warn: (...args) => console.warn(...args)
@@ -366,55 +446,39 @@ const chartPanelService = window.createChartPanelService({
     getCharts: () => [elevationChart, speedChart, hrChart, powerChart]
 });
 const overlayHeatmapToggleService = window.createOverlayHeatmapToggleService({
-    getIsHeatmapActive: () => isHeatmapActive,
-    setIsHeatmapActive: (nextValue) => {
-        isHeatmapActive = Boolean(nextValue);
-    },
-    getIsGlobalHeatmapActive: () => isGlobalHeatmapActive,
-    setIsGlobalHeatmapActive: (nextValue) => {
-        isGlobalHeatmapActive = Boolean(nextValue);
-    },
-    getIsOverlayActive: () => isOverlayActive,
-    setIsOverlayActive: (nextValue) => {
-        isOverlayActive = Boolean(nextValue);
-    },
+    getIsHeatmapActive: () => mapStateManager.getIsHeatmapActive(),
+    setIsHeatmapActive: (nextValue) => mapStateManager.setIsHeatmapActive(nextValue),
+    getIsGlobalHeatmapActive: () => mapStateManager.getIsGlobalHeatmapActive(),
+    setIsGlobalHeatmapActive: (nextValue) => mapStateManager.setIsGlobalHeatmapActive(nextValue),
+    getIsOverlayActive: () => mapStateManager.getIsOverlayActive(),
+    setIsOverlayActive: (nextValue) => mapStateManager.setIsOverlayActive(nextValue),
     clearHeatmapLayers,
     updateHeatmap,
     getTrackLayers: () => trackLayers,
     getActiveTrackName: () => getEffectiveActiveTrackName(),
-    getMap: () => map,
+    getMap: () => mapStateManager.getMap(),
     getAllLineLayers: collectAllNonHeatmapLineLayers,
-    getHeatmapLayers: () => heatmapLayers
+    getHeatmapLayers: () => mapStateManager.getHeatmapLayers()
 });
 const playbackControlService = window.createPlaybackControlService({
-    getPlaybackKeybindingsInitialized: () => playbackKeybindingsInitialized,
-    setPlaybackKeybindingsInitialized: (nextValue) => {
-        playbackKeybindingsInitialized = Boolean(nextValue);
-    },
+    getPlaybackKeybindingsInitialized: () => playbackStateManager.getPlaybackKeybindingsInitialized(),
+    setPlaybackKeybindingsInitialized: (nextValue) => playbackStateManager.setPlaybackKeybindingsInitialized(nextValue),
     getActiveTrackName: () => getEffectiveActiveTrackName(),
-    getPlaybackPoints: () => playbackPoints,
+    getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
     getIsPlaying: () => getEffectiveIsPlaying(),
-    getPlaybackSpeed: () => playbackSpeed,
+    getPlaybackSpeed: () => playbackStateManager.getPlaybackSpeed(),
     getPlaybackIndex: () => getEffectivePlaybackIndex(),
     setPlaybackIndexState: (nextValue) => {
         setEffectivePlaybackIndex(nextValue);
     },
-    getPlaybackTimelineSeconds: () => playbackTimelineSeconds,
-    setPlaybackTimelineSeconds: (nextValue) => {
-        playbackTimelineSeconds = Array.isArray(nextValue) ? nextValue : [];
-    },
-    getPlaybackVirtualSeconds: () => playbackVirtualSeconds,
-    setPlaybackVirtualSeconds: (nextValue) => {
-        playbackVirtualSeconds = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
-    },
-    getPlaybackLastTickMs: () => playbackLastTickMs,
-    setPlaybackLastTickMs: (nextValue) => {
-        playbackLastTickMs = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
-    },
-    getPlaybackTimer: () => playbackTimer,
-    setPlaybackTimer: (nextValue) => {
-        playbackTimer = nextValue;
-    },
+    getPlaybackTimelineSeconds: () => playbackStateManager.getPlaybackTimelineSeconds(),
+    setPlaybackTimelineSeconds: (nextValue) => playbackStateManager.setPlaybackTimelineSeconds(nextValue),
+    getPlaybackVirtualSeconds: () => playbackStateManager.getPlaybackVirtualSeconds(),
+    setPlaybackVirtualSeconds: (nextValue) => playbackStateManager.setPlaybackVirtualSeconds(nextValue),
+    getPlaybackLastTickMs: () => playbackStateManager.getPlaybackLastTickMs(),
+    setPlaybackLastTickMs: (nextValue) => playbackStateManager.setPlaybackLastTickMs(nextValue),
+    getPlaybackTimer: () => playbackStateManager.getPlaybackTimer(),
+    setPlaybackTimer: (nextValue) => playbackStateManager.setPlaybackTimer(nextValue),
     setIsPlaying: (nextValue) => {
         setEffectiveIsPlaying(nextValue);
     },
@@ -424,7 +488,7 @@ const playbackControlService = window.createPlaybackControlService({
     showToast,
     clearChartSync,
     setPlaybackMarker: (nextValue) => {
-        playbackMarker = nextValue;
+        playbackStateManager.setPlaybackMarker(nextValue);
     }
 });
 const toastNotificationService = window.createToastNotificationService({
@@ -441,20 +505,20 @@ const heatmapTimeFilterService = window.createHeatmapTimeFilterService({
         heatmapTimeFilters = nextValue && typeof nextValue === 'object' ? nextValue : {};
     },
     persistUiState,
-    getIsHeatmapActive: () => isHeatmapActive,
+    getIsHeatmapActive: () => mapStateManager.getIsHeatmapActive(),
     updateHeatmap
 });
 const heatmapGradientService = window.createHeatmapGradientService();
 const heatmapLayerService = window.createHeatmapLayerService({
     getLeaflet: () => window.L,
-    getMap: () => map,
+    getMap: () => mapStateManager.getMap(),
     getCurrentProfile: () => getEffectiveCurrentProfile(),
     getCachedTracks: () => cachedTracks,
     getTrackLayers: () => trackLayers,
     getCachedTrack,
     extractPointsSafely,
-    getIsGlobalHeatmapActive: () => isGlobalHeatmapActive,
-    getIsHeatmapActive: () => isHeatmapActive,
+    getIsGlobalHeatmapActive: () => mapStateManager.getIsGlobalHeatmapActive(),
+    getIsHeatmapActive: () => mapStateManager.getIsHeatmapActive(),
     canRenderMapOverlays,
     isValidMapCoordinatePair,
     isFiniteTrackPoint,
@@ -462,10 +526,8 @@ const heatmapLayerService = window.createHeatmapLayerService({
     buildHeatmapGradientForProfile,
     heatmapSampleDistanceM: HEATMAP_SAMPLE_DISTANCE_M,
     heatmapGridFactor: HEATMAP_GRID_FACTOR,
-    getHeatmapLayers: () => heatmapLayers,
-    setHeatmapLayers: (nextValue) => {
-        heatmapLayers = Array.isArray(nextValue) ? nextValue : [];
-    }
+    getHeatmapLayers: () => mapStateManager.getHeatmapLayers(),
+    setHeatmapLayers: (nextValue) => mapStateManager.setHeatmapLayers(nextValue)
 });
 const panelUiService = window.createPanelUiService({
     endOutlierMode,
@@ -481,25 +543,21 @@ const panelUiService = window.createPanelUiService({
 const loadingOverlayService = window.createLoadingOverlayService();
 const playbackChartSyncService = window.createPlaybackChartSyncService({
     buildPlaybackTimeline,
-    getPlaybackPoints: () => playbackPoints,
+    getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
     getPlaybackIndex: () => getEffectivePlaybackIndex(),
     setPlaybackIndex: (nextValue) => {
         setEffectivePlaybackIndex(nextValue);
     },
-    getPlaybackTimelineSeconds: () => playbackTimelineSeconds,
-    setPlaybackTimelineSeconds: (nextValue) => {
-        playbackTimelineSeconds = Array.isArray(nextValue) ? nextValue : [];
-    },
-    setPlaybackVirtualSeconds: (nextValue) => {
-        playbackVirtualSeconds = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
-    },
+    getPlaybackTimelineSeconds: () => playbackStateManager.getPlaybackTimelineSeconds(),
+    setPlaybackTimelineSeconds: (nextValue) => playbackStateManager.setPlaybackTimelineSeconds(nextValue),
+    setPlaybackVirtualSeconds: (nextValue) => playbackStateManager.setPlaybackVirtualSeconds(nextValue),
     getCharts: () => [elevationChart, speedChart, hrChart, powerChart],
-    getPlaybackMarker: () => playbackMarker,
+    getPlaybackMarker: () => playbackStateManager.getPlaybackMarker(),
     setPlaybackMarker: (nextValue) => {
-        playbackMarker = nextValue;
+        playbackStateManager.setPlaybackMarker(nextValue);
     },
     getLeaflet: () => window.L,
-    getMap: () => map,
+    getMap: () => mapStateManager.getMap(),
     updatePlaybackControlState
 });
 const playbackTimelineService = window.createPlaybackTimelineService({
@@ -513,7 +571,7 @@ const segmentFavoriteHelperService = window.createSegmentFavoriteHelperService({
     formatMetricValue
 });
 const chartBuildService = window.createChartBuildService({
-    getPlaybackPoints: () => playbackPoints,
+    getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
     getElevationChart: () => elevationChart,
     setElevationChart: (nextValue) => {
         elevationChart = nextValue;
@@ -811,7 +869,7 @@ function setAnalysisThresholds(profile, nextThresholds, { rerender = true } = {}
         return;
     }
 
-    if (currentView === VIEW_ANALYSES) {
+    if (uiStateManager.getCurrentView() === VIEW_ANALYSES) {
         renderAnalysesView();
     }
 }
@@ -826,7 +884,7 @@ function resetAnalysisThresholds(profile, { rerender = true } = {}) {
     delete analysisOverviewPromiseByProfile[profile];
     persistUiState();
 
-    if (rerender && currentView === VIEW_ANALYSES) {
+    if (rerender && uiStateManager.getCurrentView() === VIEW_ANALYSES) {
         renderAnalysesView();
     }
 }
@@ -870,13 +928,14 @@ function setWhatIfPace(profile, valueKmh) {
 }
 
 function updateDashboardScopeButtons(root = document) {
+    dashboardScope = uiStateManager.getDashboardScope();
     root.querySelectorAll('[data-stats-scope]').forEach(button => {
         button.classList.toggle('active', button.getAttribute('data-stats-scope') === dashboardScope);
     });
 }
 
 function setDashboardScope(nextScope, { rerender = true } = {}) {
-    dashboardScope = nextScope === 'all' ? 'all' : 'profile';
+    dashboardScope = uiStateManager.setDashboardScope(nextScope);
     updateDashboardScopeButtons();
     persistUiState();
 
@@ -888,12 +947,19 @@ function setDashboardScope(nextScope, { rerender = true } = {}) {
         renderDashboard();
     }
 
-    if (currentView === VIEW_STATISTICS) {
+    if (uiStateManager.getCurrentView() === VIEW_STATISTICS) {
         renderStatisticsView();
     }
 }
 
 function persistUiState() {
+    currentProfile = profileManager.getCurrentProfile();
+    currentView = uiStateManager.getCurrentView();
+    startupIntroDismissed = uiStateManager.getStartupIntroDismissed();
+    currentSearchTerm = uiStateManager.getCurrentSearchTerm();
+    activeFilters = uiStateManager.getActiveFilters();
+    dashboardScope = uiStateManager.getDashboardScope();
+
     uiStateStore.save({
         currentProfile,
         currentView,
@@ -1288,16 +1354,19 @@ function syncFoundationProfileState() {
         return;
     }
 
+    currentProfile = profileManager.setCurrentProfile(currentProfile);
+    profileSwitchRequestId = profileManager.setProfileSwitchRequestId(profileSwitchRequestId);
+
     const storeRequestId = typeof appStore.selectStateRaw === 'function'
         ? appStore.selectStateRaw('features.profileSwitchRequestId')
         : null;
 
     if (Number.isInteger(storeRequestId) && storeRequestId > profileSwitchRequestId) {
-        profileSwitchRequestId = storeRequestId;
+        profileSwitchRequestId = profileManager.setProfileSwitchRequestId(storeRequestId);
     }
 
     appStore.setState({
-        'ui.currentProfile': currentProfile,
+        'ui.currentProfile': profileManager.getCurrentProfile(),
         'features.profileSwitchRequestId': profileSwitchRequestId
     });
 }
@@ -1338,7 +1407,7 @@ function getEffectiveActiveTrackName() {
 
 function setEffectivePlaybackIndex(nextValue) {
     const normalized = Number.isFinite(Number(nextValue)) ? Number(nextValue) : 0;
-    playbackIndex = normalized;
+    playbackIndex = playbackStateManager.setPlaybackIndex(normalized);
 
     if (typeof appStore !== 'undefined' && appStore && typeof appStore.setState === 'function') {
         appStore.setState({ 'playback.currentIndex': normalized });
@@ -1351,16 +1420,20 @@ function getEffectivePlaybackIndex() {
     if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
         const indexFromStore = appStore.selectStateRaw('playback.currentIndex');
         if (Number.isFinite(Number(indexFromStore)) && Number(indexFromStore) >= 0) {
+            playbackStateManager.setPlaybackIndex(Number(indexFromStore));
+            playbackIndex = Number(indexFromStore);
             return Number(indexFromStore);
         }
     }
 
-    return playbackIndex;
+    const indexFromManager = playbackStateManager.getPlaybackIndex();
+    playbackIndex = indexFromManager;
+    return indexFromManager;
 }
 
 function setEffectiveIsPlaying(nextValue) {
     const normalized = Boolean(nextValue);
-    isPlaying = normalized;
+    isPlaying = playbackStateManager.setIsPlaying(normalized);
 
     if (typeof appStore !== 'undefined' && appStore && typeof appStore.setState === 'function') {
         appStore.setState({ 'playback.isPlaying': normalized });
@@ -1373,19 +1446,31 @@ function getEffectiveIsPlaying() {
     if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
         const isPlayingFromStore = appStore.selectStateRaw('playback.isPlaying');
         if (typeof isPlayingFromStore === 'boolean') {
+            playbackStateManager.setIsPlaying(isPlayingFromStore);
+            isPlaying = isPlayingFromStore;
             return isPlayingFromStore;
         }
     }
 
-    return isPlaying;
+    const isPlayingFromManager = playbackStateManager.getIsPlaying();
+    isPlaying = isPlayingFromManager;
+    return isPlayingFromManager;
 }
 
 function getEffectiveCurrentProfile() {
     if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
         const profileFromStore = appStore.selectStateRaw('ui.currentProfile');
         if (typeof profileFromStore === 'string' && profileFromStore) {
+            profileManager.setCurrentProfile(profileFromStore);
+            currentProfile = profileFromStore;
             return profileFromStore;
         }
+    }
+
+    const profileFromManager = profileManager.getCurrentProfile();
+    if (typeof profileFromManager === 'string' && profileFromManager) {
+        currentProfile = profileFromManager;
+        return profileFromManager;
     }
 
     return currentProfile;
@@ -1395,8 +1480,16 @@ function getEffectiveProfileSwitchRequestId() {
     if (typeof appStore !== 'undefined' && appStore && typeof appStore.selectStateRaw === 'function') {
         const requestIdFromStore = appStore.selectStateRaw('features.profileSwitchRequestId');
         if (Number.isInteger(requestIdFromStore) && requestIdFromStore >= 0) {
+            profileManager.setProfileSwitchRequestId(requestIdFromStore);
+            profileSwitchRequestId = requestIdFromStore;
             return requestIdFromStore;
         }
+    }
+
+    const requestIdFromManager = profileManager.getProfileSwitchRequestId();
+    if (Number.isInteger(requestIdFromManager) && requestIdFromManager >= 0) {
+        profileSwitchRequestId = requestIdFromManager;
+        return requestIdFromManager;
     }
 
     return profileSwitchRequestId;
@@ -1409,7 +1502,20 @@ chartPluginService.registerSyncLinePlugin({ chartCtor: typeof Chart !== 'undefin
 
 const frontendAppController = new FrontendAppController(uiStateStore);
 
+window.__legacyFrontendRuntime = window.__legacyFrontendRuntime || {};
+window.__legacyFrontendRuntime.frontendAppController = frontendAppController;
+window.__legacyFrontendRuntime.uiStateStore = uiStateStore;
+window.__legacyFrontendRuntime.profileManager = profileManager;
+window.__legacyFrontendRuntime.uiStateManager = uiStateManager;
+window.__legacyFrontendRuntime.mapStateManager = mapStateManager;
+window.__legacyFrontendRuntime.playbackStateManager = playbackStateManager;
+
 document.addEventListener('DOMContentLoaded', async () => {
+    if (window.__frontendApp && typeof window.__frontendApp.bootstrapLegacy === 'function') {
+        await window.__frontendApp.bootstrapLegacy();
+        return;
+    }
+
     await frontendAppController.bootstrap();
 });
 
@@ -2688,7 +2794,8 @@ async function loadAllTracks(options = {}) {
         updateStartupProgress({ statusText: 'Profile und GPX-Dateien werden gesucht...' });
     }
 
-    const profiles = availableProfiles.length ? availableProfiles : getProfilesFromButtons();
+    const knownProfiles = profileManager.getAvailableProfiles();
+    const profiles = knownProfiles.length ? knownProfiles : getProfilesFromButtons();
     const nextTracksByProfile = {};
     const failedLoads = [];
 
@@ -2785,17 +2892,19 @@ async function loadAllTracks(options = {}) {
         await runWithConcurrency(taskFactories, 5);
 
         tracksByProfile = nextTracksByProfile;
-        if (!tracksByProfile[currentProfile]) {
-            currentProfile = profiles[0] || currentProfile;
+        const activeProfile = getEffectiveCurrentProfile();
+        if (!tracksByProfile[activeProfile]) {
+            currentProfile = profileManager.setCurrentProfile(profiles[0] || activeProfile);
+            syncFoundationProfileState();
         }
 
         isAppLoaded = true;
-        showProfileTracks(currentProfile);
-        await loadActivityNoteSummaries(currentProfile, { force: true });
+        showProfileTracks(getEffectiveCurrentProfile());
+        await loadActivityNoteSummaries(getEffectiveCurrentProfile(), { force: true });
         renderHomeView();
         renderAnalysesView();
         renderStatisticsView();
-        await restorePersistedTrackSelection(currentProfile);
+        await restorePersistedTrackSelection(getEffectiveCurrentProfile());
         updateAnalysisControlAvailability();
         runPersonalRecordAlertCheck({ startup });
         persistUiState();
@@ -3679,12 +3788,13 @@ function isDashboardOpen() {
 }
 
 function getCurrentProfileLabel() {
-    const button = document.querySelector(`.profile-btn[data-profile="${currentProfile}"]`);
+    const profile = getEffectiveCurrentProfile();
+    const button = document.querySelector(`.profile-btn[data-profile="${profile}"]`);
     if (button?.textContent) {
         return button.textContent.trim();
     }
 
-    return currentProfile;
+    return profile;
 }
 
 function getProfileLabel(profile) {
@@ -3746,11 +3856,12 @@ function collectCurrentProfileTrackStats() {
         .filter(Boolean);
 }
 
-function getTrackStatsScopeCacheKey(scope = dashboardScope) {
-    return scope === 'all' ? 'all' : `profile:${currentProfile}`;
+function getTrackStatsScopeCacheKey(scope = uiStateManager.getDashboardScope()) {
+    const profile = getEffectiveCurrentProfile();
+    return scope === 'all' ? 'all' : `profile:${profile}`;
 }
 
-function collectTrackStatsForScope(scope = dashboardScope) {
+function collectTrackStatsForScope(scope = uiStateManager.getDashboardScope()) {
     if (trackStatsCacheGeneration !== loadGeneration) {
         trackStatsCacheGeneration = loadGeneration;
         trackStatsByScopeCache = {};
@@ -3763,9 +3874,10 @@ function collectTrackStatsForScope(scope = dashboardScope) {
     }
 
     if (scope !== 'all') {
+        const currentProfileKey = getEffectiveCurrentProfile();
         const rows = collectCurrentProfileTrackStats().map(item => ({
             ...item,
-            profile: currentProfile,
+            profile: currentProfileKey,
             profileLabel: getCurrentProfileLabel()
         }));
 
@@ -3773,7 +3885,8 @@ function collectTrackStatsForScope(scope = dashboardScope) {
         return rows;
     }
 
-    const allProfiles = availableProfiles.length ? availableProfiles : Object.keys(tracksByProfile);
+    const availableProfileList = profileManager.getAvailableProfiles();
+    const allProfiles = availableProfileList.length ? availableProfileList : Object.keys(tracksByProfile);
     const rows = [];
 
     allProfiles.forEach(profile => {
@@ -4282,14 +4395,16 @@ function createDashboardStatCard({ icon, title, value, sub, standout = false }) 
     return card;
 }
 
-async function focusTrackFromDashboard(filename, profile = currentProfile) {
+async function focusTrackFromDashboard(filename, profile = getEffectiveCurrentProfile()) {
     const modal = document.getElementById('dashboard-modal');
     if (modal) {
         closeModalWithA11y(modal);
     }
 
-    if (profile && profile !== currentProfile) {
-        currentProfile = profile;
+    const activeProfile = getEffectiveCurrentProfile();
+    if (profile && profile !== activeProfile) {
+        currentProfile = profileManager.setCurrentProfile(profile);
+        syncFoundationProfileState();
         document.querySelectorAll('.profile-btn').forEach(button => {
             button.classList.toggle('active', button.getAttribute('data-profile') === currentProfile);
         });
@@ -4311,9 +4426,9 @@ async function focusTrackFromDashboard(filename, profile = currentProfile) {
     if (searchInput) {
         searchInput.value = '';
     }
-    currentSearchTerm = '';
+    currentSearchTerm = uiStateManager.setCurrentSearchTerm('');
 
-    activeFilters.clear();
+    activeFilters = uiStateManager.replaceActiveFilters([]);
     document.querySelectorAll('.filter-chip.active').forEach(chip => chip.classList.remove('active'));
     applyFiltersAndSort();
 
@@ -4327,7 +4442,7 @@ async function focusTrackFromDashboard(filename, profile = currentProfile) {
 
 function getStatisticsViewApi() {
     return resolveViewApi('__statisticsViewApi', 'createStatisticsView', () => ({
-            getDashboardScope: () => dashboardScope,
+            getDashboardScope: () => uiStateManager.getDashboardScope(),
             getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
             createStatsScopeSwitch,
@@ -4369,7 +4484,7 @@ function getAnalysesViewApi() {
             getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCurrentProfileLabel,
             getActiveTrackName: () => getEffectiveActiveTrackName(),
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             getTracksByProfile: () => tracksByProfile,
             getAnalysisThresholds,
             formatThresholdLabel,
@@ -4435,8 +4550,8 @@ function renderAnalysesView() {
 
 function getTrimSummaryViewApi() {
     return resolveViewApi('__trimSummaryViewApi', 'createTrimSummaryView', () => ({
-            getPlaybackPoints: () => playbackPoints,
-            getMap: () => map
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
+            getMap: () => mapStateManager.getMap()
         }));
 }
 
@@ -4455,8 +4570,8 @@ function getTrimHandleIconViewApi() {
 function getTrimPreviewViewApi() {
     return resolveViewApi('__trimPreviewViewApi', 'createTrimPreviewView', () => ({
             getTrimSelection: () => trimSelection,
-            getPlaybackPoints: () => playbackPoints,
-            getMap: () => map,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
+            getMap: () => mapStateManager.getMap(),
             removeMapLayer,
             leaflet: L
         }));
@@ -4474,7 +4589,7 @@ function getTrackVisualStateViewApi() {
             drawElevationAnalysis,
             drawSpeedAnalysis,
             clearAnalysisOverlayLayers,
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             updateAnalysisControlAvailability
         }));
 }
@@ -4486,9 +4601,9 @@ function getTrimInteractionViewApi() {
             getCachedTrack,
             updateDetailsPanel,
             getTrimSelection: () => trimSelection,
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             updateTrimPreview,
-            getMap: () => map
+            getMap: () => mapStateManager.getMap()
         }));
 }
 
@@ -4511,7 +4626,7 @@ function getTrimBeginViewApi() {
     return resolveViewApi('__trimBeginViewApi', 'createTrimBeginView', () => ({
             getActiveTrackName: () => getEffectiveActiveTrackName(),
             getCurrentProfile: () => getEffectiveCurrentProfile(),
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             isTrimModeFor,
             focusTrimSelection,
             endOutlierMode,
@@ -4522,7 +4637,7 @@ function getTrimBeginViewApi() {
                 trimSelection = nextValue;
             },
             getTrimSelection: () => trimSelection,
-            getMap: () => map,
+            getMap: () => mapStateManager.getMap(),
             leaflet: L,
             createTrimHandleIcon,
             findNearestPlaybackPointIndex,
@@ -4588,8 +4703,8 @@ function getOutlierDetectionViewApi() {
 function getOutlierHighlightViewApi() {
     return resolveViewApi('__outlierHighlightViewApi', 'createOutlierHighlightView', () => ({
             getOutlierSelection: () => outlierSelection,
-            getPlaybackPoints: () => playbackPoints,
-            getMap: () => map,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
+            getMap: () => mapStateManager.getMap(),
             removeMapLayer,
             refreshDetailsPanelIfPossible,
             leaflet: L
@@ -4610,7 +4725,7 @@ function getOutlierModeViewApi() {
             applyActiveTrackVisualState,
             refreshDetailsPanelIfPossible,
             showToast,
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             isOutlierModeFor,
             focusOutlierCandidate,
             endTrimMode,
@@ -4697,14 +4812,12 @@ function getComparisonViewApi() {
             clearComparisonOverlay,
             endTrimMode,
             endOutlierMode,
-            getIsHeatmapActive: () => isHeatmapActive,
-            setIsHeatmapActive: (nextValue) => {
-                isHeatmapActive = Boolean(nextValue);
-            },
+            getIsHeatmapActive: () => mapStateManager.getIsHeatmapActive(),
+            setIsHeatmapActive: (nextValue) => mapStateManager.setIsHeatmapActive(nextValue),
             clearHeatmapLayers,
             getCompareSelection: () => compareSelection,
             collectComparisonSummary,
-            getMap: () => map,
+            getMap: () => mapStateManager.getMap(),
             showToast,
             getCompareOverlayLayers: () => compareOverlayLayers,
             setCompareOverlayLayers: (layers) => {
@@ -4793,12 +4906,12 @@ function getFilterSearchViewApi() {
             getCurrentProfile: () => getEffectiveCurrentProfile(),
             getTrackDataCache: () => trackDataCache,
             getTrackLayers: () => trackLayers,
-            getMap: () => map,
-            getCurrentSearchTerm: () => currentSearchTerm,
+            getMap: () => mapStateManager.getMap(),
+            getCurrentSearchTerm: () => uiStateManager.getCurrentSearchTerm(),
             setCurrentSearchTerm: (nextTerm) => {
-                currentSearchTerm = String(nextTerm || '').toLowerCase();
+                currentSearchTerm = uiStateManager.setCurrentSearchTerm(nextTerm);
             },
-            getActiveFilters: () => activeFilters,
+            getActiveFilters: () => uiStateManager.getActiveFilters(),
             getSpeedThresholdsForProfile,
             getActivityNoteSummary,
             persistUiState,
@@ -4811,14 +4924,14 @@ function getFilterSearchViewApi() {
             getActiveTrackName: () => getEffectiveActiveTrackName(),
             resetActiveTrackSelection: () => {
                 setEffectiveActiveTrackName(null, getEffectiveCurrentProfile());
-                playbackPoints = [];
+                playbackPoints = playbackStateManager.setPlaybackPoints([]);
                 rebuildPlaybackTimeline();
                 stopPlayback();
                 closeFloatingPanel();
                 updateAnalysisControlAvailability();
             },
             syncTrackListActiveState,
-            getIsHeatmapActive: () => isHeatmapActive,
+            getIsHeatmapActive: () => mapStateManager.getIsHeatmapActive(),
             updateHeatmap
         }));
 }
@@ -4830,9 +4943,9 @@ function getViewStateViewApi() {
             viewAnalyses: VIEW_ANALYSES,
             viewStatistics: VIEW_STATISTICS,
             viewHealth: VIEW_HEALTH,
-            getCurrentView: () => currentView,
+            getCurrentView: () => uiStateManager.getCurrentView(),
             setCurrentView: (nextView) => {
-                currentView = nextView;
+                currentView = uiStateManager.setCurrentView(nextView);
             },
             renderHomeView,
             renderAnalysesView,
@@ -4853,9 +4966,9 @@ function getViewStateViewApi() {
 
 function getHomeTrackNavigationViewApi() {
     return resolveViewApi('__homeTrackNavigationViewApi', 'createHomeTrackNavigationView', () => ({
-            getActiveFilters: () => activeFilters,
+            getActiveFilters: () => uiStateManager.getActiveFilters(),
             setCurrentSearchTerm: (nextTerm) => {
-                currentSearchTerm = String(nextTerm || '').toLowerCase();
+                currentSearchTerm = uiStateManager.setCurrentSearchTerm(nextTerm);
             },
             persistUiState,
             applyFiltersAndSort,
@@ -4913,9 +5026,9 @@ function getEquipmentTrackViewApi() {
 function getStartupOverlayViewApi() {
     return resolveViewApi('__startupOverlayViewApi', 'createStartupOverlayView', () => ({
             startupLoadingMinMs: STARTUP_LOADING_MIN_MS,
-            getStartupIntroDismissed: () => startupIntroDismissed,
+            getStartupIntroDismissed: () => uiStateManager.getStartupIntroDismissed(),
             setStartupIntroDismissed: (nextValue) => {
-                startupIntroDismissed = nextValue === true;
+                startupIntroDismissed = uiStateManager.setStartupIntroDismissed(nextValue);
                 persistUiState();
             }
         }));
@@ -4926,15 +5039,15 @@ function getProfileSwitcherViewApi() {
             apiBase: API_BASE,
             getCurrentProfile: () => getEffectiveCurrentProfile(),
             setCurrentProfile: (nextProfile) => {
-                currentProfile = nextProfile;
+                currentProfile = profileManager.setCurrentProfile(nextProfile);
                 syncFoundationProfileState();
             },
-            getAvailableProfiles: () => availableProfiles,
+            getAvailableProfiles: () => profileManager.getAvailableProfiles(),
             setAvailableProfiles: (nextProfiles) => {
-                availableProfiles = Array.isArray(nextProfiles) ? nextProfiles : [];
+                availableProfiles = profileManager.setAvailableProfiles(nextProfiles);
             },
             nextProfileSwitchRequestId: () => {
-                profileSwitchRequestId += 1;
+                profileSwitchRequestId = profileManager.nextProfileSwitchRequestId();
                 syncFoundationProfileState();
                 return profileSwitchRequestId;
             },
@@ -4968,10 +5081,10 @@ function getProfileSwitcherViewApi() {
 function getMapInitViewApi() {
     return resolveViewApi('__mapInitViewApi', 'createMapInitView', () => ({
             setMap: (nextMap) => {
-                map = nextMap;
+                mapStateManager.setMap(nextMap);
             },
             onMapZoomChanged: () => {
-                if (isHeatmapActive) {
+                if (mapStateManager.getIsHeatmapActive()) {
                     updateHeatmap();
                 }
             }
@@ -4990,7 +5103,7 @@ function getAnalysisModeViewApi() {
             getActiveTrackName: () => getEffectiveActiveTrackName(),
             getCurrentProfile: () => getEffectiveCurrentProfile(),
             getCachedTrack,
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             clearAnalysisOverlayLayers,
             closeElevationPanel,
             selectTrack,
@@ -5000,7 +5113,7 @@ function getAnalysisModeViewApi() {
 
 function getView3DToggleViewApi() {
     return resolveViewApi('__view3DToggleViewApi', 'createView3DToggleView', () => ({
-            getMap: () => map,
+            getMap: () => mapStateManager.getMap(),
             showToast
         }));
 }
@@ -5029,7 +5142,7 @@ function getTrackPointLoadViewApi() {
 
 function getMapLayerCleanupViewApi() {
     return resolveViewApi('__mapLayerCleanupViewApi', 'createMapLayerCleanupView', () => ({
-            getMap: () => map,
+            getMap: () => mapStateManager.getMap(),
             getCompareOverlayLayers: () => compareOverlayLayers,
             setCompareOverlayLayers: (nextLayers) => {
                 compareOverlayLayers = Array.isArray(nextLayers) ? nextLayers : [];
@@ -5056,7 +5169,7 @@ function getWeatherRequestPayloadViewApi() {
     return resolveViewApi('__weatherRequestPayloadViewApi', 'createWeatherRequestPayloadView', () => ({
             getCurrentProfile: () => getEffectiveCurrentProfile(),
             getActiveTrackName: () => getEffectiveActiveTrackName(),
-            getPlaybackPoints: () => playbackPoints,
+            getPlaybackPoints: () => playbackStateManager.getPlaybackPoints(),
             getCachedTrack,
             toFiniteNumber
         }));
