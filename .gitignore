@@ -11,6 +11,7 @@ Desktop.ini
 *.temp
 
 # Node
+node_modules/
 LiveMapApp/node_modules/
 LiveMapApp/npm-debug.log*
 LiveMapApp/yarn-debug.log*

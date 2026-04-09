@@ -1,6 +1,5 @@
 const REQUIRED_GLOBAL_HANDLERS = [
     'setActiveView',
-    'toggleFloatingPanel',
     'closeElevationPanel'
 ];
 

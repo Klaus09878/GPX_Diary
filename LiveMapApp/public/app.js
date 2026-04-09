@@ -5947,10 +5947,6 @@ function closeFloatingPanel() {
     return panelUiBridgeService.closeFloatingPanel();
 }
 
-function toggleFloatingPanel() {
-    return panelUiBridgeService.toggleFloatingPanel();
-}
-
 function closeElevationPanel() {
     return panelUiBridgeService.closeElevationPanel();
 }

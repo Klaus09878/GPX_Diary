@@ -11,10 +11,6 @@
             return panelUiService.closeFloatingPanel();
         }
 
-        function toggleFloatingPanel() {
-            return panelUiService.toggleFloatingPanel();
-        }
-
         function closeElevationPanel() {
             return panelUiService.closeElevationPanel();
         }
@@ -61,7 +57,6 @@
 
         return {
             closeFloatingPanel,
-            toggleFloatingPanel,
             closeElevationPanel,
             initFloatingPanelControls,
             updateChartTabsVisibility,
