@@ -1,117 +1,60 @@
-/**
- * Unit tests for AppConfig service
- * Tests configuration normalization and validation
- */
-
-const assert = require('node:assert');
 const path = require('node:path');
 
-// This is a simple test structure to be used with a test runner like Jest or Mocha
-// To run: npm test (after test runner is configured in package.json)
+const { AppConfig } = require('../src/server/core/AppConfig');
 
-const testSuite = {
-    name: 'AppConfig',
-    tests: [],
-    
-    describe(name, fn) {
-        this.tests.push({ name, type: 'suite', fn });
-    },
-    
-    it(name, fn) {
-        this.tests.push({ name, type: 'test', fn });
-    }
-};
+describe('AppConfig', () => {
+    const envBackup = {
+        BUY_ME_A_COFFEE_URL: process.env.BUY_ME_A_COFFEE_URL,
+        SUPPORT_URL: process.env.SUPPORT_URL,
+        PORT: process.env.PORT
+    };
 
-/**
- * Test Suite: AppConfig Service
- * Tests for URL normalization, path resolution, and config merging
- */
-testSuite.describe('AppConfig.normalizePublicHttpUrl', () => {
-    testSuite.it('accepts valid HTTPS URLs', async () => {
-        const url = 'https://buymeacoffee.com/Klaus09878';
-        const result = url; // AppConfig would normalize this
-        assert.strictEqual(result, url);
+    afterEach(() => {
+        if (envBackup.BUY_ME_A_COFFEE_URL === undefined) {
+            delete process.env.BUY_ME_A_COFFEE_URL;
+        } else {
+            process.env.BUY_ME_A_COFFEE_URL = envBackup.BUY_ME_A_COFFEE_URL;
+        }
+
+        if (envBackup.SUPPORT_URL === undefined) {
+            delete process.env.SUPPORT_URL;
+        } else {
+            process.env.SUPPORT_URL = envBackup.SUPPORT_URL;
+        }
+
+        if (envBackup.PORT === undefined) {
+            delete process.env.PORT;
+        } else {
+            process.env.PORT = envBackup.PORT;
+        }
     });
-    
-    testSuite.it('accepts valid HTTP URLs', async () => {
-        const url = 'http://localhost:3000';
-        const result = url;
-        assert.strictEqual(result, url);
+
+    it('normalizes http and https URLs', () => {
+        const config = new AppConfig();
+
+        expect(config.normalizePublicHttpUrl('https://example.com')).toBe('https://example.com/');
+        expect(config.normalizePublicHttpUrl('http://localhost:3000/test?x=1')).toBe('http://localhost:3000/test?x=1');
+        expect(config.normalizePublicHttpUrl('ftp://example.com')).toBe('');
+        expect(config.normalizePublicHttpUrl('not-a-url')).toBe('');
     });
-    
-    testSuite.it('should handle URLs with query parameters', async () => {
-        const url = 'https://example.com/page?ref=test';
-        const result = url;
-        assert.strictEqual(result, url);
+
+    it('uses BUY_ME_A_COFFEE_URL before SUPPORT_URL', () => {
+        process.env.BUY_ME_A_COFFEE_URL = 'https://buymeacoffee.com/example';
+        process.env.SUPPORT_URL = 'https://support.example.com';
+
+        const config = new AppConfig({ rootDir: path.join(__dirname, '..'), port: '3123' });
+
+        expect(config.supportUrl).toBe('https://buymeacoffee.com/example');
+        expect(config.port).toBe(3123);
     });
-    
-    testSuite.it('rejects invalid URLs gracefully', async () => {
-        const invalidUrl = 'not-a-url';
-        // AppConfig should return null or undefined for invalid URLs
-        assert.ok(true); // Placeholder test
+
+    it('resolves standard project paths from rootDir', () => {
+        const rootDir = path.join(__dirname, '..');
+        const config = new AppConfig({ rootDir, port: 3000 });
+
+        expect(config.publicDir).toBe(path.join(rootDir, 'public'));
+        expect(config.dataDir).toBe(path.join(rootDir, 'data'));
+        expect(config.metadataDbPath).toBe(path.join(rootDir, 'data', 'app-metadata.sqlite'));
+        expect(config.sqlJsDistDir).toBe(path.join(rootDir, 'node_modules', 'sql.js', 'dist'));
     });
 });
-
-testSuite.describe('AppConfig path resolution', () => {
-    testSuite.it('resolves profile paths correctly', async () => {
-        const baseDir = '/app/data';
-        const profile = 'rennrad';
-        const resolved = path.join(baseDir, profile);
-        assert.ok(resolved.includes('rennrad'));
-    });
-    
-    testSuite.it('handles nested data directory structures', async () => {
-        const dataPath = path.join(__dirname, '..', 'data', 'rennrad');
-        assert.ok(dataPath.includes('data'));
-        assert.ok(dataPath.includes('rennrad'));
-    });
-});
-
-testSuite.describe('AppConfig environment variable handling', () => {
-    testSuite.it('reads BUY_ME_A_COFFEE_URL from environment', async () => {
-        const testUrl = 'https://buymeacoffee.com/test';
-        process.env.BUY_ME_A_COFFEE_URL = testUrl;
-        assert.strictEqual(process.env.BUY_ME_A_COFFEE_URL, testUrl);
-        delete process.env.BUY_ME_A_COFFEE_URL;
-    });
-    
-    testSuite.it('reads SUPPORT_URL as fallback', async () => {
-        const testUrl = 'https://support.example.com';
-        process.env.SUPPORT_URL = testUrl;
-        assert.strictEqual(process.env.SUPPORT_URL, testUrl);
-        delete process.env.SUPPORT_URL;
-    });
-    
-    testSuite.it('prefers BUY_ME_A_COFFEE_URL over SUPPORT_URL', async () => {
-        const coffee = 'https://buymeacoffee.com/user';
-        const support = 'https://support.example.com';
-        process.env.BUY_ME_A_COFFEE_URL = coffee;
-        process.env.SUPPORT_URL = support;
-        
-        // AppConfig should prefer BUY_ME_A_COFFEE_URL
-        const preferredUrl = process.env.BUY_ME_A_COFFEE_URL || process.env.SUPPORT_URL;
-        assert.strictEqual(preferredUrl, coffee);
-        
-        delete process.env.BUY_ME_A_COFFEE_URL;
-        delete process.env.SUPPORT_URL;
-    });
-});
-
-testSuite.describe('AppConfig port configuration', () => {
-    testSuite.it('uses environment PORT or defaults to 3000', async () => {
-        const port = process.env.PORT || 3000;
-        assert.ok(typeof port === 'string' || typeof port === 'number');
-    });
-    
-    testSuite.it('converts string port to number', async () => {
-        const portStr = '3001';
-        const portNum = parseInt(portStr, 10);
-        assert.strictEqual(portNum, 3001);
-        assert.strictEqual(typeof portNum, 'number');
-    });
-});
-
-/**
- * Export test suite for test runner
- */
-module.exports = testSuite;

@@ -1,163 +1,37 @@
-/**
- * Unit tests for API Route Validation
- * Tests for input validation, parameter checking, and error handling
- */
+const path = require('node:path');
 
-const assert = require('node:assert');
+const { createTrackFileHelpers } = require('../src/server/core/trackFileHelpers');
 
-const testSuite = {
-    name: 'API Route Validation',
-    tests: [],
-    
-    describe(name, fn) {
-        this.tests.push({ name, type: 'suite', fn });
-    },
-    
-    it(name, fn) {
-        this.tests.push({ name, type: 'test', fn });
-    }
-};
-
-/**
- * Test Suite: Profile Validation
- */
-testSuite.describe('Profile validation', () => {
-    const validProfiles = ['rennrad', 'laufen', 'spazieren', 'motorrad'];
-    
-    testSuite.it('accepts valid profile names', async () => {
-        const profile = 'rennrad';
-        const isValid = validProfiles.includes(profile);
-        assert.strictEqual(isValid, true);
+describe('Track file helpers', () => {
+    const helpers = createTrackFileHelpers({
+        profiles: ['motorrad', 'rennrad', 'laufen', 'spazieren'],
+        dataDir: path.join(__dirname, '..', 'data'),
+        allowedUploadExtensions: new Set(['.gpx', '.fit', '.fir'])
     });
-    
-    testSuite.it('rejects invalid profile names', async () => {
-        const profile = 'invalid_profile';
-        const isValid = validProfiles.includes(profile);
-        assert.strictEqual(isValid, false);
+
+    it('sanitizes upload filenames and keeps allowed extensions', () => {
+        expect(helpers.sanitizeFilename('  Tour 01.FIT  ')).toBe('Tour 01.fit');
+        expect(helpers.sanitizeFilename('../../../escape.gpx')).toBe('escape.gpx');
+        expect(helpers.sanitizeFilename('bad.exe')).toBeNull();
     });
-    
-    testSuite.it('validates all known profiles', async () => {
-        validProfiles.forEach(profile => {
-            const isValid = validProfiles.includes(profile);
-            assert.strictEqual(isValid, true);
-        });
+
+    it('accepts only safe track filenames', () => {
+        expect(helpers.isSafeTrackFilename('2026-03-04_ride.gpx')).toBe(true);
+        expect(helpers.isSafeTrackFilename('..\\escape.gpx')).toBe(false);
+        expect(helpers.isSafeTrackFilename('../escape.gpx')).toBe(false);
+        expect(helpers.isSafeTrackFilename('track.fit')).toBe(false);
+    });
+
+    it('maps filenames into the selected profile directory', () => {
+        const target = helpers.toProfileFilePath('rennrad', 'tour.gpx');
+
+        expect(target).toBe(path.join(__dirname, '..', 'data', 'rennrad', 'tour.gpx'));
+        expect(helpers.toProfileFilePath('unknown', 'tour.gpx')).toBeNull();
+        expect(helpers.toProfileFilePath('rennrad', '../tour.gpx')).toBeNull();
+    });
+
+    it('converts FIT upload names to GPX names', () => {
+        expect(helpers.toGpxFilename('Tour 01.FIT')).toBe('Tour 01.gpx');
+        expect(helpers.toGpxFilename('Tour 02.fir')).toBe('Tour 02.gpx');
     });
 });
-
-/**
- * Test Suite: Filename Validation
- */
-testSuite.describe('Filename validation', () => {
-    // Safe filenames should not contain path separators or suspicious patterns
-    function isSafeTrackFilename(filename) {
-        // Check for path traversal attempts
-        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-            return false;
-        }
-        // Check for basic format
-        if (!filename.endsWith('.gpx') && !filename.endsWith('.fit')) {
-            return false;
-        }
-        // Basic length check
-        if (filename.length < 5 || filename.length > 255) {
-            return false;
-        }
-        return true;
-    }
-    
-    testSuite.it('accepts valid GPX filenames', async () => {
-        const filename = '2026-03-04_Laufen-2816533633.gpx';
-        const isValid = isSafeTrackFilename(filename);
-        assert.strictEqual(isValid, true);
-    });
-    
-    testSuite.it('rejects path traversal attempts', async () => {
-        const filename = '../../../etc/passwd.gpx';
-        const isValid = isSafeTrackFilename(filename);
-        assert.strictEqual(isValid, false);
-    });
-    
-    testSuite.it('rejects filenames with backslashes', async () => {
-        const filename = '..\\windows\\path.gpx';
-        const isValid = isSafeTrackFilename(filename);
-        assert.strictEqual(isValid, false);
-    });
-    
-    testSuite.it('rejects filenames without extension', async () => {
-        const filename = 'suspicious-file';
-        const isValid = isSafeTrackFilename(filename);
-        assert.strictEqual(isValid, false);
-    });
-    
-    testSuite.it('rejects excessive filename lengths', async () => {
-        const filename = 'a'.repeat(300) + '.gpx';
-        const isValid = isSafeTrackFilename(filename);
-        assert.strictEqual(isValid, false);
-    });
-});
-
-/**
- * Test Suite: Query Parameter Validation
- */
-testSuite.describe('Query parameter validation', () => {
-    testSuite.it('parses integer limit parameter', async () => {
-        const limit = parseInt('30', 10);
-        assert.strictEqual(limit, 30);
-        assert.ok(Number.isInteger(limit));
-    });
-    
-    testSuite.it('uses default limit when invalid', async () => {
-        const limit = parseInt('invalid', 10) || 30;
-        assert.strictEqual(limit, 30);
-    });
-    
-    testSuite.it('validates trim indices are integers', async () => {
-        const startIndex = Number(10);
-        const endIndex = Number(25);
-        
-        const isValid = Number.isInteger(startIndex) && Number.isInteger(endIndex);
-        assert.strictEqual(isValid, true);
-    });
-    
-    testSuite.it('rejects non-integer trim indices', async () => {
-        const startIndex = Number('not-a-number');
-        const endIndex = Number(25);
-        
-        const isValid = Number.isInteger(startIndex) && Number.isInteger(endIndex);
-        assert.strictEqual(isValid, false);
-    });
-});
-
-/**
- * Test Suite: Error Response Handling
- */
-testSuite.describe('Error response handling', () => {
-    testSuite.it('formats 400 Bad Request responses', async () => {
-        const statusCode = 400;
-        const errorMsg = 'Invalid profile';
-        
-        assert.strictEqual(statusCode, 400);
-        assert.ok(typeof errorMsg === 'string');
-    });
-    
-    testSuite.it('formats 404 Not Found responses', async () => {
-        const statusCode = 404;
-        const errorMsg = 'File not found';
-        
-        assert.strictEqual(statusCode, 404);
-        assert.ok(typeof errorMsg === 'string');
-    });
-    
-    testSuite.it('formats 500 Server Error responses', async () => {
-        const statusCode = 500;
-        const errorMsg = 'Failed to process request';
-        
-        assert.strictEqual(statusCode, 500);
-        assert.ok(typeof errorMsg === 'string');
-    });
-});
-
-/**
- * Export test suite for test runner
- */
-module.exports = testSuite;

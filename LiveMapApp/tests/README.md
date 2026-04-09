@@ -1,29 +1,27 @@
 # Tests Directory
 
-Place unit tests here following the naming convention: `*.test.js`
+This folder contains the Jest-based test suite for `LiveMapApp`.
 
-## Getting Started
+## Running Tests
 
-1. Create a test file: `myFeature.test.js`
-2. Run tests: `npm test` (from LiveMapApp/)
-3. Current setup: Test discovery only (framework ready for Jest/Mocha integration)
+1. `npm test`
+2. `npm run test:watch`
+3. `npm run test:coverage`
 
-## Test Strategy
+## Current Focus
 
-- **Unit Tests**: Focus on core services (AppConfig, health parsing, GPX processing)
-- **Smoke Tests**: Run `npm run verify:migration` to check ESM migration + critical integration points
-- **Manual Integration**: Test via browser after server startup
+- Unit tests for configuration, GPX transformation, and helper validation.
+- Route-level tests for critical backend behavior.
+- Health-import and other file-processing paths with real assertions.
 
-## Example Structure
+## Conventions
 
-```js
-// tests/AppConfig.test.js
-const AppConfig = require('../src/server/core/AppConfig');
+- Test files use the `*.test.js` naming pattern.
+- Tests should import the real module under test.
+- Prefer small fixtures and deterministic assertions.
+- Keep route tests isolated with stubbed dependencies where practical.
 
-describe('AppConfig', () => {
-  test('normalizePublicHttpUrl returns valid URL', () => {
-    const result = AppConfig.normalizePublicHttpUrl('https://example.com');
-    expect(result).toBe('https://example.com');
-  });
-});
-```
+## Smoke Tests
+
+- `npm run verify:migration` remains the migration and startup smoke gate.
+- It should complement, not replace, the Jest suite.

@@ -10,6 +10,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVICES_DIR = path.join(PROJECT_ROOT, 'public', 'js', 'app', 'services');
 const INDEX_HTML = path.join(PROJECT_ROOT, 'public', 'index.html');
 const APP_JS = path.join(PROJECT_ROOT, 'public', 'app.js');
+const JEST_BIN = path.join(PROJECT_ROOT, 'node_modules', 'jest', 'bin', 'jest.js');
 const TEST_PORT = 3000;
 
 function logStep(message) {
@@ -108,6 +109,33 @@ function runSyntaxChecks() {
     });
 
     process.stdout.write(`[gate] Syntax OK (${bridgeFiles.length + 1} files)\n`);
+}
+
+function runJestSuite() {
+    logStep('Running Jest test suite');
+
+    if (!fs.existsSync(JEST_BIN)) {
+        fail('Jest is not installed. Run npm install in LiveMapApp first.');
+    }
+
+    const result = spawnSync(process.execPath, [JEST_BIN, '--runInBand'], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf8'
+    });
+
+    if (result.stdout) {
+        process.stdout.write(result.stdout);
+    }
+
+    if (result.stderr) {
+        process.stderr.write(result.stderr);
+    }
+
+    if (result.status !== 0) {
+        fail(`Jest suite failed with exit code ${result.status}`);
+    }
+
+    process.stdout.write('[gate] Jest suite OK\n');
 }
 
 function readBridgeRefsFromIndex() {
@@ -251,6 +279,12 @@ async function main() {
         runSyntaxChecks();
     } catch (error) {
         fail(`Syntax check failed: ${error?.message || String(error)}`);
+    }
+
+    try {
+        runJestSuite();
+    } catch (error) {
+        fail(`Jest validation failed: ${error?.message || String(error)}`);
     }
     
     try {
