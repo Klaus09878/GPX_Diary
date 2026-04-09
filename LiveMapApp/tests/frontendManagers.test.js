@@ -247,4 +247,52 @@ describe('frontend manager factories', () => {
         expect(playbackStateManager.setIsPlaying(1)).toBe(true);
         expect(playbackStateManager.getIsPlaying()).toBe(true);
     });
+
+    it('track selection manager tracks active track and request ids', () => {
+        const windowRef = {};
+        const trackSelectionManagerPath = path.join(
+            __dirname,
+            '..',
+            'public',
+            'js',
+            'app',
+            'managers',
+            'trackSelectionManager.js'
+        );
+
+        loadScriptIntoWindow(trackSelectionManagerPath, windowRef);
+
+        const state = {
+            activeTrackName: null,
+            selectionRequestId: 4,
+            lastSelectedTrackByProfile: { motorrad: 'route-a.gpx' }
+        };
+
+        const trackSelectionManager = windowRef.createTrackSelectionManager({
+            getActiveTrackName: () => state.activeTrackName,
+            setActiveTrackName: (nextValue) => {
+                state.activeTrackName = nextValue;
+            },
+            getSelectionRequestId: () => state.selectionRequestId,
+            setSelectionRequestId: (nextValue) => {
+                state.selectionRequestId = nextValue;
+            },
+            getLastSelectedTrackByProfile: () => state.lastSelectedTrackByProfile,
+            setLastSelectedTrackByProfile: (nextValue) => {
+                state.lastSelectedTrackByProfile = nextValue;
+            }
+        });
+
+        expect(trackSelectionManager.getActiveTrackName()).toBeNull();
+        expect(trackSelectionManager.setActiveTrackName('track-a.gpx')).toBe('track-a.gpx');
+        expect(trackSelectionManager.getActiveTrackName()).toBe('track-a.gpx');
+
+        expect(trackSelectionManager.getSelectionRequestId()).toBe(4);
+        expect(trackSelectionManager.nextSelectionRequestId()).toBe(5);
+        expect(trackSelectionManager.setSelectionRequestId(-1)).toBe(0);
+        expect(trackSelectionManager.setSelectionRequestId(9)).toBe(9);
+
+        expect(trackSelectionManager.getLastSelectedTrackByProfile()).toEqual({ motorrad: 'route-a.gpx' });
+        expect(trackSelectionManager.setLastSelectedTrackByProfile({ laufen: 'run.gpx' })).toEqual({ laufen: 'run.gpx' });
+    });
 });

@@ -340,6 +340,21 @@ const playbackStateManager = window.createPlaybackStateManager({
     }
 });
 
+const trackSelectionManager = window.createTrackSelectionManager({
+    getActiveTrackName: () => activeTrackName,
+    setActiveTrackName: (nextValue) => {
+        activeTrackName = nextValue;
+    },
+    getSelectionRequestId: () => activeSelectionRequestId,
+    setSelectionRequestId: (nextValue) => {
+        activeSelectionRequestId = Number(nextValue);
+    },
+    getLastSelectedTrackByProfile: () => lastSelectedTrackByProfile,
+    setLastSelectedTrackByProfile: (nextValue) => {
+        lastSelectedTrackByProfile = nextValue && typeof nextValue === 'object' ? nextValue : {};
+    }
+});
+
 // ===========================================================
 const HEATMAP_SAMPLE_DISTANCE_M = 20;
 const HEATMAP_GRID_FACTOR = 5000;
@@ -416,10 +431,8 @@ const persistedSelectionService = window.createPersistedSelectionService({
         currentView = uiStateManager.setCurrentView(nextView);
     },
     setActiveView,
-    getLastSelectedTrackByProfile: () => lastSelectedTrackByProfile,
-    setLastSelectedTrackByProfile: (nextValue) => {
-        lastSelectedTrackByProfile = nextValue && typeof nextValue === 'object' ? nextValue : {};
-    },
+    getLastSelectedTrackByProfile: () => trackSelectionManager.getLastSelectedTrackByProfile(),
+    setLastSelectedTrackByProfile: (nextValue) => trackSelectionManager.setLastSelectedTrackByProfile(nextValue),
     persistUiState,
     getTracksByProfile: (profile) => tracksByProfile[profile],
     getActiveTrackName: () => getEffectiveActiveTrackName(),
@@ -1376,7 +1389,7 @@ function syncFoundationSelectionState(profile = getEffectiveCurrentProfile()) {
         return;
     }
 
-    const safeFilename = typeof activeTrackName === 'string' && activeTrackName ? activeTrackName : null;
+    const safeFilename = trackSelectionManager.getActiveTrackName();
     appStore.setState({
         'selectedTrack.profile': safeFilename ? profile : null,
         'selectedTrack.filename': safeFilename
@@ -1384,7 +1397,7 @@ function syncFoundationSelectionState(profile = getEffectiveCurrentProfile()) {
 }
 
 function setEffectiveActiveTrackName(filename, profile = getEffectiveCurrentProfile()) {
-    activeTrackName = typeof filename === 'string' && filename ? filename : null;
+    activeTrackName = trackSelectionManager.setActiveTrackName(filename);
     syncFoundationSelectionState(profile);
     return activeTrackName;
 }
@@ -1402,7 +1415,7 @@ function getEffectiveActiveTrackName() {
         }
     }
 
-    return activeTrackName;
+    return trackSelectionManager.getActiveTrackName();
 }
 
 function setEffectivePlaybackIndex(nextValue) {
@@ -1509,6 +1522,7 @@ window.__legacyFrontendRuntime.profileManager = profileManager;
 window.__legacyFrontendRuntime.uiStateManager = uiStateManager;
 window.__legacyFrontendRuntime.mapStateManager = mapStateManager;
 window.__legacyFrontendRuntime.playbackStateManager = playbackStateManager;
+window.__legacyFrontendRuntime.trackSelectionManager = trackSelectionManager;
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (window.__frontendApp && typeof window.__frontendApp.bootstrapLegacy === 'function') {
@@ -1917,25 +1931,25 @@ async function selectTrack(filename) {
         endOutlierMode({ refreshPanel: false });
     }
 
-    const selectionRequestId = ++activeSelectionRequestId;
+    const selectionRequestId = trackSelectionManager.nextSelectionRequestId();
     const gpxLayer = cached.layer;
     
     setEffectiveActiveTrackName(filename, currentProfile);
     setPersistedTrackSelection(currentProfile, filename);
     stopPlayback();
-    playbackPoints = [];
+    playbackPoints = playbackStateManager.setPlaybackPoints([]);
     rebuildPlaybackTimeline();
     updateAnalysisControlAvailability();
 
-    if (isHeatmapActive) {
-        isHeatmapActive = false;
+    if (mapStateManager.getIsHeatmapActive()) {
+        mapStateManager.setIsHeatmapActive(false);
         document.getElementById('heatmap-toggle')?.classList.remove('active');
         document.querySelector('.map-container')?.classList.remove('heatmap-active');
         clearHeatmapLayers();
     }
 
     playbackPoints = normalizeTrackPoints(await ensureTrackPoints(currentProfile, filename, gpxLayer));
-    if (selectionRequestId !== activeSelectionRequestId) {
+    if (selectionRequestId !== trackSelectionManager.getSelectionRequestId()) {
         return;
     }
 
@@ -3716,7 +3730,7 @@ function createTrackListItem(filename, dist) {
     const li = document.createElement('li');
     li.className = 'track-item';
     li.id = getTrackListItemId(filename);
-    if (filename === activeTrackName) {
+    if (filename === getEffectiveActiveTrackName()) {
         li.classList.add('active');
     }
 
@@ -3744,13 +3758,14 @@ function addTrackToList(filename, dist, listElement = null) {
     list.appendChild(createTrackListItem(filename, dist));
 }
 
-function syncTrackListActiveState(filename = activeTrackName) {
+function syncTrackListActiveState(filename = getEffectiveActiveTrackName()) {
+    const activeFilename = typeof filename === 'string' && filename ? filename : getEffectiveActiveTrackName();
     document.querySelectorAll('.track-item.active').forEach(el => el.classList.remove('active'));
-    if (!filename) {
+    if (!activeFilename) {
         return;
     }
 
-    const listItem = document.getElementById(getTrackListItemId(filename));
+    const listItem = document.getElementById(getTrackListItemId(activeFilename));
     if (listItem) {
         listItem.classList.add('active');
     }
@@ -6012,7 +6027,7 @@ function createSegmentFavoriteEditor() {
     trackSelect.className = 'activity-note-select';
     const selectedFilename = (typeof draft?.filename === 'string' && files.includes(draft.filename))
         ? draft.filename
-        : (activeTrackName && files.includes(activeTrackName) ? activeTrackName : files[0]);
+        : ((getEffectiveActiveTrackName() && files.includes(getEffectiveActiveTrackName())) ? getEffectiveActiveTrackName() : files[0]);
 
     files.forEach(filename => {
         const option = document.createElement('option');
