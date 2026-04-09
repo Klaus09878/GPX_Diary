@@ -1,0 +1,19 @@
+Node.js Runtime Attribution
+==========================
+
+This project distribution may include an unmodified Node.js runtime binary
+for Windows under LiveMapApp/runtime/node.
+
+Node.js is licensed under the MIT License.
+Copyright OpenJS Foundation and Node.js contributors.
+
+Official project:
+https://nodejs.org/
+
+License text:
+https://github.com/nodejs/node/blob/main/LICENSE
+
+Important:
+- Keep this attribution file together with the bundled runtime.
+- When updating runtime version, keep source URL and checksum in
+  LiveMapApp/runtime/README_NODE_RUNTIME.md.

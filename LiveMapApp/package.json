@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node scripts/testRunner.js",
     "start": "node server.js",
-    "verify:migration": "node scripts/migrationSmokeGate.js"
+    "verify:migration": "node scripts/migrationSmokeGate.js",
+    "verify:portable": "powershell -ExecutionPolicy Bypass -File scripts/verifyPortableRuntime.ps1"
   },
   "keywords": [
     "gpx",

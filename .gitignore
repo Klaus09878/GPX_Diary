@@ -18,7 +18,8 @@ LiveMapApp/yarn-error.log*
 LiveMapApp/pnpm-debug.log*
 
 # Runtime bundles / portable node
-LiveMapApp/runtime/
+LiveMapApp/runtime/downloads/
+LiveMapApp/runtime/*.tmp
 
 # Local app data (privacy + generated state)
 LiveMapApp/data/**

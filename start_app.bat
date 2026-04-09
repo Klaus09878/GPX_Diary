@@ -19,31 +19,52 @@ echo Starte GPX Map Diary Server...
 
 set "NODE_EXE="
 set "NPM_CMD="
+set "RUNTIME_NODE_DIR=.\runtime\node"
 
-if exist ".\runtime\node\node.exe" (
-	set "NODE_EXE=.\runtime\node\node.exe"
-	if exist ".\runtime\node\npm.cmd" (
-		set "NPM_CMD=.\runtime\node\npm.cmd"
-	) else (
-		set "NPM_CMD=npm"
+if exist "%RUNTIME_NODE_DIR%\node.exe" (
+	set "NODE_EXE=%RUNTIME_NODE_DIR%\node.exe"
+	if exist "%RUNTIME_NODE_DIR%\npm.cmd" (
+		set "NPM_CMD=%RUNTIME_NODE_DIR%\npm.cmd"
 	)
-	echo Verwende mitgeliefertes Node.js aus LiveMapApp\runtime\node
+	echo Verwende portable Node.js aus LiveMapApp\runtime\node
 ) else (
-	where node >NUL 2>NUL
-	if errorlevel 1 (
+	if /I "%USE_GLOBAL_NODE_FALLBACK%"=="1" (
+		where node >NUL 2>NUL
+		where npm >NUL 2>NUL
+		if errorlevel 1 (
+			echo.
+			echo FEHLER: Weder portable Runtime noch globale Node/npm-Installation gefunden.
+			echo.
+			echo Erwartet wird: LiveMapApp\runtime\node\node.exe und LiveMapApp\runtime\node\npm.cmd
+			echo.
+			pause
+			exit /b 1
+		)
+		set "NODE_EXE=node"
+		set "NPM_CMD=npm"
+		echo WARNUNG: Verwende globales Node.js, weil USE_GLOBAL_NODE_FALLBACK=1 gesetzt ist.
+	) else (
 		echo.
-		echo FEHLER: Node.js wurde nicht gefunden.
+		echo FEHLER: Portable Node-Runtime fehlt.
 		echo.
-		echo Option A ^(empfohlen^): Node.js LTS installieren und Script erneut starten.
-		echo Option B ^(ohne Installation^): Portable Node nach LiveMapApp\runtime\node entpacken.
-		echo Download: https://nodejs.org/en/download
+		echo Erwartet wird: LiveMapApp\runtime\node\node.exe und LiveMapApp\runtime\node\npm.cmd
+		echo Diese Distribution soll ohne lokale Node-Installation laufen.
+		echo Bitte Runtime im Repository bereitstellen und Script erneut starten.
+		echo.
+		echo Hinweis fuer Entwickler: Fuer einen temporaeren Fallback setze USE_GLOBAL_NODE_FALLBACK=1
 		echo.
 		pause
 		exit /b 1
 	)
-	set "NODE_EXE=node"
-	set "NPM_CMD=npm"
-	echo Verwende global installiertes Node.js.
+)
+
+if "%NPM_CMD%"=="" (
+	echo.
+	echo FEHLER: npm wurde nicht gefunden.
+	echo Erwartet wird: LiveMapApp\runtime\node\npm.cmd
+	echo Bitte die portable Runtime mit npm vollstaendig bereitstellen.
+	pause
+	exit /b 1
 )
 
 if not exist "package.json" (
