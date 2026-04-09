@@ -38,6 +38,20 @@
             clearChartSync();
         }
 
+        function initFloatingPanelControls() {
+            document.getElementById('floating-panel-close-btn')?.addEventListener('click', () => {
+                toggleFloatingPanel();
+            });
+
+            document.getElementById('show-floating-btn')?.addEventListener('click', () => {
+                toggleFloatingPanel();
+            });
+
+            document.getElementById('elevation-panel-close-btn')?.addEventListener('click', () => {
+                closeElevationPanel();
+            });
+        }
+
         function updateChartTabsVisibility(hasHR, hasPower) {
             const hrTab = document.getElementById('tab-hr');
             const powerTab = document.getElementById('tab-power');
@@ -67,6 +81,7 @@
             closeFloatingPanel,
             toggleFloatingPanel,
             closeElevationPanel,
+            initFloatingPanelControls,
             updateChartTabsVisibility
         };
     }

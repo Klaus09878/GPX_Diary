@@ -318,12 +318,12 @@
 
             <!-- Floating Info Panel (New) -->
             <div id="floating-info-panel" class="floating-info-panel">
-                <button class="panel-hide-btn" onclick="toggleFloatingPanel()">Ausblenden</button>
+                <button class="panel-hide-btn" id="floating-panel-close-btn" type="button">Ausblenden</button>
                 <div id="floating-info-content"></div>
             </div>
 
             <!-- Toggle Button for Floating Info -->
-            <button id="show-floating-btn" class="show-floating-btn" style="display: none;" onclick="toggleFloatingPanel()">
+            <button id="show-floating-btn" class="show-floating-btn" style="display: none;" type="button">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
                     <polyline points="18 15 12 9 6 15"></polyline>
                 </svg>
@@ -337,7 +337,7 @@
                     <button class="chart-tab active" data-chart="speed">Tempo</button>
                     <button class="chart-tab" data-chart="hr" id="tab-hr">Puls</button>
                     <button class="chart-tab" data-chart="power" id="tab-power">Watt</button>
-                    <button class="panel-hide-btn" onclick="closeElevationPanel()">Ausblenden</button>
+                    <button class="panel-hide-btn" id="elevation-panel-close-btn" type="button">Ausblenden</button>
                 </div>
                 <div class="charts-main-area" id="charts-wrapper">
                     <div class="chart-container" id="elevation-chart-container">

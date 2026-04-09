@@ -50,11 +50,11 @@
                     <h2>Bereit für dein nächstes Training.</h2>
                     <p>Für das Profil ${escapeHtml(getCurrentProfileLabel())} sind noch keine Trainings geladen. Du kannst direkt GPX-, FIT- oder FIR-Dateien importieren und anschließend auf der Karte analysieren.</p>
                     <div class="home-quick-actions">
-                        <button class="home-action-btn" type="button" onclick="document.getElementById('drop-zone')?.click()">Dateien importieren</button>
-                        <button class="home-action-btn" type="button" onclick="window.setTimeout(() => document.getElementById('dashboard-btn')?.click(), 0)">Statistik öffnen</button>
-                        <button class="home-action-btn" type="button" onclick="window.setTimeout(() => setActiveView('statistics'), 0)">Statistik-Seite</button>
-                        <button class="home-action-btn" type="button" onclick="window.setTimeout(() => setActiveView('analyses'), 0)">Analysen-Seite</button>
-                        <button class="home-action-btn" type="button" onclick="window.setTimeout(() => document.getElementById('equipment-btn')?.click(), 0)">Equipment öffnen</button>
+                        <button class="home-action-btn" type="button" data-home-action="import-files">Dateien importieren</button>
+                        <button class="home-action-btn" type="button" data-home-action="open-dashboard">Statistik öffnen</button>
+                        <button class="home-action-btn" type="button" data-home-action="open-statistics">Statistik-Seite</button>
+                        <button class="home-action-btn" type="button" data-home-action="open-analyses">Analysen-Seite</button>
+                        <button class="home-action-btn" type="button" data-home-action="open-equipment">Equipment öffnen</button>
                     </div>
                 </article>
             </section>
@@ -87,13 +87,13 @@
                 <h2>Dein Trainings-Überblick ist bereit.</h2>
                 <p>Alle wichtigen Bereiche sind direkt erreichbar: Karte, Analysen, Statistik, Vergleich und PR. Letzte Einheiten, Notizen und Equipment-Status sind in einer kompakten Übersicht zusammengeführt.</p>
                 <div class="home-quick-actions">
-                    <button class="home-action-btn" type="button" id="home-quick-map">Zur Karte</button>
-                    <button class="home-action-btn" type="button" id="home-quick-analyses">Analysen-Seite</button>
-                    <button class="home-action-btn" type="button" id="home-quick-statistics">Statistik-Seite</button>
-                    <button class="home-action-btn" type="button" id="home-quick-dashboard">Statistiken</button>
-                    <button class="home-action-btn" type="button" id="home-quick-compare">Vergleich</button>
-                    <button class="home-action-btn" type="button" id="home-quick-pr">PR & Segmente</button>
-                    <button class="home-action-btn" type="button" id="home-quick-equipment">Equipment</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-map">Zur Karte</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-analyses">Analysen-Seite</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-statistics">Statistik-Seite</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-dashboard">Statistiken</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-compare">Vergleich</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-pr">PR & Segmente</button>
+                    <button class="home-action-btn" type="button" data-home-action="open-equipment">Equipment</button>
                 </div>
             </article>
             <article class="home-hero-card">

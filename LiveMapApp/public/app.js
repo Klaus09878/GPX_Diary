@@ -85,6 +85,7 @@ class FrontendAppController {
             initHeatmapScopeToggle();
             initHeatmapTimeFilters();
             initOverlayToggle();
+            initFloatingPanelControls();
             initElevationPanel();
             initChartTabs();
             initView3DToggle();
@@ -5952,6 +5953,10 @@ function toggleFloatingPanel() {
 
 function closeElevationPanel() {
     return panelUiBridgeService.closeElevationPanel();
+}
+
+function initFloatingPanelControls() {
+    return panelUiBridgeService.initFloatingPanelControls();
 }
 
 function scheduleChartResize() {

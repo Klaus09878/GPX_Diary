@@ -19,6 +19,10 @@
             return panelUiService.closeElevationPanel();
         }
 
+        function initFloatingPanelControls() {
+            return panelUiService.initFloatingPanelControls();
+        }
+
         function updateChartTabsVisibility(hasHR, hasPower) {
             return panelUiService.updateChartTabsVisibility(hasHR, hasPower);
         }
@@ -59,6 +63,7 @@
             closeFloatingPanel,
             toggleFloatingPanel,
             closeElevationPanel,
+            initFloatingPanelControls,
             updateChartTabsVisibility,
             showLoadingOverlay,
             scheduleChartResize,

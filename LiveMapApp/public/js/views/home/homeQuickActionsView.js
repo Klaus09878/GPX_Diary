@@ -8,13 +8,50 @@
         showToast
     }) {
         function bindHomeQuickActions(homeView) {
-            document.getElementById('home-quick-map')?.addEventListener('click', () => setActiveView(viewMap));
-            document.getElementById('home-quick-analyses')?.addEventListener('click', () => setActiveView(viewAnalyses));
-            document.getElementById('home-quick-statistics')?.addEventListener('click', () => setActiveView(viewStatistics));
-            document.getElementById('home-quick-dashboard')?.addEventListener('click', () => document.getElementById('home-open-dashboard')?.click());
-            document.getElementById('home-quick-compare')?.addEventListener('click', () => document.getElementById('home-open-compare')?.click());
-            document.getElementById('home-quick-pr')?.addEventListener('click', () => document.getElementById('home-open-pr')?.click());
-            document.getElementById('home-quick-equipment')?.addEventListener('click', () => document.getElementById('home-open-equipment')?.click());
+            homeView?.querySelectorAll('[data-home-action]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const action = button.getAttribute('data-home-action');
+
+                    if (action === 'open-map') {
+                        setActiveView(viewMap);
+                        return;
+                    }
+
+                    if (action === 'open-analyses') {
+                        setActiveView(viewAnalyses);
+                        return;
+                    }
+
+                    if (action === 'open-statistics') {
+                        setActiveView(viewStatistics);
+                        return;
+                    }
+
+                    if (action === 'open-dashboard') {
+                        document.getElementById('home-open-dashboard')?.click();
+                        return;
+                    }
+
+                    if (action === 'open-compare') {
+                        document.getElementById('home-open-compare')?.click();
+                        return;
+                    }
+
+                    if (action === 'open-pr') {
+                        document.getElementById('home-open-pr')?.click();
+                        return;
+                    }
+
+                    if (action === 'open-equipment') {
+                        document.getElementById('home-open-equipment')?.click();
+                        return;
+                    }
+
+                    if (action === 'import-files') {
+                        document.getElementById('drop-zone')?.click();
+                    }
+                });
+            });
 
             homeView?.querySelectorAll('[data-open-track]').forEach(button => {
                 button.addEventListener('click', () => {

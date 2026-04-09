@@ -17,7 +17,7 @@
                         </div>
                         <div class="health-upload-zone" id="health-drop-zone">
                             <input type="file" id="health-csv-input" accept=".csv" style="display: none;">
-                            <button class="home-action-btn" onclick="document.getElementById('health-csv-input').click()">
+                            <button class="home-action-btn" id="health-csv-upload-btn" type="button">
                                 CSV Hochladen
                             </button>
                             <p class="upload-hint">Nur .csv Dateien mit Spalten 'date' und 'steps'</p>
@@ -51,6 +51,7 @@
             }
 
             const fileInput = document.getElementById('health-csv-input');
+            document.getElementById('health-csv-upload-btn')?.addEventListener('click', () => fileInput?.click());
             fileInput?.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) handleHealthUpload(file);
