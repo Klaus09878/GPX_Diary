@@ -458,6 +458,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"
         integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
     <script src="js/api/healthApi.js"></script>
+    <!-- Central API Client (must load early for all services) -->
+    <script src="js/app/services/frontendApiClient.js"></script>
+    <!-- Central State Management (must load early) -->
+    <script src="js/app/state/appStore.js"></script>
+    <!-- Frontend Orchestrators (complex state transitions) -->
+    <script src="js/app/orchestrators/stateOrchestrators.js"></script>
     <!-- Core utility and state services -->
     <script src="js/app/services/htmlEscapeService.js"></script>
     <script src="js/app/services/formatUtilsService.js"></script>
